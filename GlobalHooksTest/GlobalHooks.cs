@@ -14,6 +14,7 @@ namespace GlobalHooksTest
 		public delegate void BasicHookEventHandler(IntPtr Handle1, IntPtr Handle2);
 		public delegate void WndProcEventHandler(IntPtr Handle, IntPtr Message, IntPtr wParam, IntPtr lParam);
 
+
 		// Functions imported from our unmanaged DLL
 		[DllImport("GlobalCbtHook.dll")]
 		private static extern bool InitializeCbtHook(int threadID, IntPtr DestWindow);
@@ -47,6 +48,10 @@ namespace GlobalHooksTest
 		private static extern void InitializeGetMsgHook(int threadID, IntPtr DestWindow);
 		[DllImport("GlobalCbtHook.dll")]
 		private static extern void UninitializeGetMsgHook();
+        [DllImport("GlobalCbtHook.dll")]
+        private static extern void InitializeSysMsgFilterHook(int threadID, IntPtr DestWindow);
+        [DllImport("GlobalCbtHook.dll")]
+        private static extern void UninitializeSysMsgFilterHook();
 
 		// API call needed to retreive the value of the messages to intercept from the unmanaged DLL
 		[DllImport("user32.dll")]
@@ -67,6 +72,9 @@ namespace GlobalHooksTest
 		private MouseLLHook _MouseLL;
 		private CallWndProcHook _CallWndProc;
 		private GetMsgHook _GetMsg;
+        private SysMsgFilterHook _SysMsgFilter;
+
+        private bool capsLockKey = false;
 
 		public GlobalHooks(IntPtr Handle)
 		{
@@ -80,6 +88,7 @@ namespace GlobalHooksTest
 			_MouseLL = new MouseLLHook(_Handle);
 			_CallWndProc = new CallWndProcHook(_Handle);
 			_GetMsg = new GetMsgHook(_Handle);
+            _SysMsgFilter = new SysMsgFilterHook(_Handle);
 		}
 
 		~GlobalHooks()
@@ -104,6 +113,7 @@ namespace GlobalHooksTest
 			_MouseLL.ProcessWindowMessage(ref m);
 			_CallWndProc.ProcessWindowMessage(ref m);
 			_GetMsg.ProcessWindowMessage(ref m);
+            _SysMsgFilter.ProcessWindowMessage(ref m);
 		}
 
 		#region Accessors
@@ -147,6 +157,11 @@ namespace GlobalHooksTest
 		{
 			get { return _GetMsg; }
 		}
+
+        public SysMsgFilterHook SysMsgFilter
+        {
+            get { return _SysMsgFilter; }
+        }
 
 		#endregion
 
@@ -275,6 +290,7 @@ namespace GlobalHooksTest
 				{
 					if (SetFocus != null)
 						SetFocus(m.WParam);
+                    
 				}
 				else if (m.Msg == _MsgID_CBT_SysCommand)
 				{
@@ -357,6 +373,7 @@ namespace GlobalHooksTest
 				}
 				else if (m.Msg == _MsgID_Shell_Redraw)
 				{
+                    
 					if (Redraw != null)
 						Redraw(m.WParam);
 				}
@@ -475,11 +492,27 @@ namespace GlobalHooksTest
 
 			public event HookReplacedEventHandler HookReplaced;
 			public event BasicHookEventHandler KeyboardLLEvent;
+            public event KeyEventHandler KeyDown;
+            public event KeyEventHandler KeyUp;
+            public event KeyEventHandler SystemKeyDown;
+            public event KeyEventHandler SystemKeyUp;
+
+            private const int WM_KEYDOWN        = 0x0100;
+            private const int WM_KEYUP          = 0x0101;
+            private const int WM_SYSTEMKEYDOWN  = 0x0104;
+            private const int WM_SYSTEMKEYUP    = 0x0105;
 
 			public KeyboardLLHook(IntPtr Handle) : base(Handle)
 			{
 			}
-
+            struct KBDLLHOOKSTRUCT
+            {
+                public int vkCode;
+                public IntPtr scanCode;
+                public IntPtr flags;
+                public IntPtr time;
+                public IntPtr dwExtraInfo;
+            }
 			protected override void OnStart()
 			{
 				// Retreive the message IDs that we'll look for in WndProc
@@ -501,6 +534,20 @@ namespace GlobalHooksTest
 				{
 					if (KeyboardLLEvent != null)
 						KeyboardLLEvent(m.WParam, m.LParam);
+
+                    KBDLLHOOKSTRUCT M = (KBDLLHOOKSTRUCT)Marshal.PtrToStructure(m.LParam, typeof(KBDLLHOOKSTRUCT));
+                    int code = 0;
+                    if (m.WParam.ToInt32() == WM_KEYDOWN)
+                    {
+                        if (KeyDown != null)
+                        {
+                            code = (int)M.vkCode;
+                            VirtualKeys vk = (VirtualKeys)M.vkCode;
+                            Keys key = ConvertKeyCode(vk);
+                            //Keys key = (Keys)M.vkCode;
+                            KeyDown(this, new KeyEventArgs(key));
+                        }
+                    }
 				}
 				else if (m.Msg == _MsgID_KeyboardLL_HookReplaced)
 				{
@@ -508,6 +555,349 @@ namespace GlobalHooksTest
 						HookReplaced();
 				}
 			}
+            private System.Windows.Forms.Keys ConvertKeyCode(VirtualKeys vk)
+            {
+                System.Windows.Forms.Keys key = System.Windows.Forms.Keys.Attn;
+
+                switch (vk)
+                {
+                    case VirtualKeys.ShiftLeft:
+                        key = System.Windows.Forms.Keys.Shift;
+                        break;
+                    case VirtualKeys.ShiftRight:
+                        key = System.Windows.Forms.Keys.Shift;
+                        break;
+                    case VirtualKeys.ControlLeft:
+                        key = System.Windows.Forms.Keys.Control;
+                        break;
+                    case VirtualKeys.ControlRight:
+                        key = System.Windows.Forms.Keys.Control;
+                        break;
+                    case VirtualKeys.AltLeft:
+                        key = System.Windows.Forms.Keys.Alt;
+                        break;
+                    case VirtualKeys.AltRight:
+                        key = System.Windows.Forms.Keys.Alt;
+                        break;
+                    case VirtualKeys.Back:
+                        key = System.Windows.Forms.Keys.Back;
+                        break;
+                    case VirtualKeys.Tab:
+                        key = System.Windows.Forms.Keys.Tab;
+                        break;
+                    case VirtualKeys.Clear:
+                        key = System.Windows.Forms.Keys.Clear;
+                        break;
+                    case VirtualKeys.Return:
+                        key = System.Windows.Forms.Keys.Return;
+                        break;
+                    case VirtualKeys.Menu:
+                        key = System.Windows.Forms.Keys.Menu;
+                        break;
+                    case VirtualKeys.Pause:
+                        key = System.Windows.Forms.Keys.Pause;
+                        break;
+                    case VirtualKeys.Capital:
+                        key = System.Windows.Forms.Keys.Capital;
+                        break;
+                    case VirtualKeys.Escape:
+                        key = System.Windows.Forms.Keys.Escape;
+                        break;
+                    case VirtualKeys.Space:
+                        key = System.Windows.Forms.Keys.Space;
+                        break;
+                    case VirtualKeys.Prior:
+                        key = System.Windows.Forms.Keys.Prior;
+                        break;
+                    case VirtualKeys.Next:
+                        key = System.Windows.Forms.Keys.Next;
+                        break;
+                    case VirtualKeys.End:
+                        key = System.Windows.Forms.Keys.End;
+                        break;
+                    case VirtualKeys.Home:
+                        key = System.Windows.Forms.Keys.Home;
+                        break;
+                    case VirtualKeys.Left:
+                        key = System.Windows.Forms.Keys.Left;
+                        break;
+                    case VirtualKeys.Up:
+                        key = System.Windows.Forms.Keys.Up;
+                        break;
+                    case VirtualKeys.Right:
+                        key = System.Windows.Forms.Keys.Right;
+                        break;
+                    case VirtualKeys.Down:
+                        key = System.Windows.Forms.Keys.Down;
+                        break;
+                    case VirtualKeys.Select:
+                        key = System.Windows.Forms.Keys.Select;
+                        break;
+                    case VirtualKeys.Print:
+                        key = System.Windows.Forms.Keys.Print;
+                        break;
+                    case VirtualKeys.Execute:
+                        key = System.Windows.Forms.Keys.Execute;
+                        break;
+                    case VirtualKeys.Snapshot:
+                        key = System.Windows.Forms.Keys.Snapshot;
+                        break;
+                    case VirtualKeys.Insert:
+                        key = System.Windows.Forms.Keys.Insert;
+                        break;
+                    case VirtualKeys.Delete:
+                        key = System.Windows.Forms.Keys.Delete;
+                        break;
+                    case VirtualKeys.Help:
+                        key = System.Windows.Forms.Keys.Help;
+                        break;
+                    case VirtualKeys.D0:
+                        key = System.Windows.Forms.Keys.D0;
+                        break;
+                    case VirtualKeys.D1:
+                        key = System.Windows.Forms.Keys.D1;
+                        break;
+                    case VirtualKeys.D2:
+                        key = System.Windows.Forms.Keys.D2;
+                        break;
+                    case VirtualKeys.D3:
+                        key = System.Windows.Forms.Keys.D3;
+                        break;
+                    case VirtualKeys.D4:
+                        key = System.Windows.Forms.Keys.D4;
+                        break;
+                    case VirtualKeys.D5:
+                        key = System.Windows.Forms.Keys.D5;
+                        break;
+                    case VirtualKeys.D6:
+                        key = System.Windows.Forms.Keys.D6;
+                        break;
+                    case VirtualKeys.D7:
+                        key = System.Windows.Forms.Keys.D7;
+                        break;
+                    case VirtualKeys.D8:
+                        key = System.Windows.Forms.Keys.D8;
+                        break;
+                    case VirtualKeys.D9:
+                        key = System.Windows.Forms.Keys.D9;
+                        break;
+                    case VirtualKeys.A:
+                        key = System.Windows.Forms.Keys.A;
+                        break;
+                    case VirtualKeys.B:
+                        key = System.Windows.Forms.Keys.B;
+                        break;
+                    case VirtualKeys.C:
+                        key = System.Windows.Forms.Keys.C;
+                        break;
+                    case VirtualKeys.D:
+                        key = System.Windows.Forms.Keys.D;
+                        break;
+                    case VirtualKeys.E:
+                        key = System.Windows.Forms.Keys.E;
+                        break;
+                    case VirtualKeys.F:
+                        key = System.Windows.Forms.Keys.F;
+                        break;
+                    case VirtualKeys.G:
+                        key = System.Windows.Forms.Keys.G;
+                        break;
+                    case VirtualKeys.H:
+                        key = System.Windows.Forms.Keys.H;
+                        break;
+                    case VirtualKeys.I:
+                        key = System.Windows.Forms.Keys.I;
+                        break;
+                    case VirtualKeys.J:
+                        key = System.Windows.Forms.Keys.J;
+                        break;
+                    case VirtualKeys.K:
+                        key = System.Windows.Forms.Keys.K;
+                        break;
+                    case VirtualKeys.L:
+                        key = System.Windows.Forms.Keys.L;
+                        break;
+                    case VirtualKeys.M:
+                        key = System.Windows.Forms.Keys.M;
+                        break;
+                    case VirtualKeys.N:
+                        key = System.Windows.Forms.Keys.N;
+                        break;
+                    case VirtualKeys.O:
+                        key = System.Windows.Forms.Keys.O;
+                        break;
+                    case VirtualKeys.P:
+                        key = System.Windows.Forms.Keys.P;
+                        break;
+                    case VirtualKeys.Q:
+                        key = System.Windows.Forms.Keys.Q;
+                        break;
+                    case VirtualKeys.R:
+                        key = System.Windows.Forms.Keys.R;
+                        break;
+                    case VirtualKeys.S:
+                        key = System.Windows.Forms.Keys.S;
+                        break;
+                    case VirtualKeys.T:
+                        key = System.Windows.Forms.Keys.T;
+                        break;
+                    case VirtualKeys.U:
+                        key = System.Windows.Forms.Keys.U;
+                        break;
+                    case VirtualKeys.V:
+                        key = System.Windows.Forms.Keys.V;
+                        break;
+                    case VirtualKeys.W:
+                        key = System.Windows.Forms.Keys.W;
+                        break;
+                    case VirtualKeys.X:
+                        key = System.Windows.Forms.Keys.X;
+                        break;
+                    case VirtualKeys.Y:
+                        key = System.Windows.Forms.Keys.Y;
+                        break;
+                    case VirtualKeys.Z:
+                        key = System.Windows.Forms.Keys.Z;
+                        break;
+                    case VirtualKeys.LWindows:
+                        key = System.Windows.Forms.Keys.LWin;
+                        break;
+                    case VirtualKeys.RWindows:
+                        key = System.Windows.Forms.Keys.RWin;
+                        break;
+                    case VirtualKeys.Apps:
+                        key = System.Windows.Forms.Keys.Apps;
+                        break;
+                    case VirtualKeys.NumPad0:
+                        key = System.Windows.Forms.Keys.NumPad0;
+                        break;
+                    case VirtualKeys.NumPad1:
+                        key = System.Windows.Forms.Keys.NumPad1;
+                        break;
+                    case VirtualKeys.NumPad2:
+                        key = System.Windows.Forms.Keys.NumPad2;
+                        break;
+                    case VirtualKeys.NumPad3:
+                        key = System.Windows.Forms.Keys.NumPad3;
+                        break;
+                    case VirtualKeys.NumPad4:
+                        key = System.Windows.Forms.Keys.NumPad4;
+                        break;
+                    case VirtualKeys.NumPad5:
+                        key = System.Windows.Forms.Keys.NumPad5;
+                        break;
+                    case VirtualKeys.NumPad6:
+                        key = System.Windows.Forms.Keys.NumPad6;
+                        break;
+                    case VirtualKeys.NumPad7:
+                        key = System.Windows.Forms.Keys.NumPad7;
+                        break;
+                    case VirtualKeys.NumPad8:
+                        key = System.Windows.Forms.Keys.NumPad8;
+                        break;
+                    case VirtualKeys.NumPad9:
+                        key = System.Windows.Forms.Keys.NumPad9;
+                        break;
+                    case VirtualKeys.Multiply:
+                        key = System.Windows.Forms.Keys.Multiply;
+                        break;
+                    case VirtualKeys.Add:
+                        key = System.Windows.Forms.Keys.Add;
+                        break;
+                    case VirtualKeys.Separator:
+                        key = System.Windows.Forms.Keys.Separator;
+                        break;
+                    case VirtualKeys.Subtract:
+                        key = System.Windows.Forms.Keys.Subtract;
+                        break;
+                    case VirtualKeys.Decimal:
+                        key = System.Windows.Forms.Keys.Decimal;
+                        break;
+                    case VirtualKeys.Divide:
+                        key = System.Windows.Forms.Keys.Divide;
+                        break;
+                    case VirtualKeys.F1:
+                        key = System.Windows.Forms.Keys.F1;
+                        break;
+                    case VirtualKeys.F2:
+                        key = System.Windows.Forms.Keys.F2;
+                        break;
+                    case VirtualKeys.F3:
+                        key = System.Windows.Forms.Keys.F3;
+                        break;
+                    case VirtualKeys.F4:
+                        key = System.Windows.Forms.Keys.F4;
+                        break;
+                    case VirtualKeys.F5:
+                        key = System.Windows.Forms.Keys.F5;
+                        break;
+                    case VirtualKeys.F6:
+                        key = System.Windows.Forms.Keys.F6;
+                        break;
+                    case VirtualKeys.F7:
+                        key = System.Windows.Forms.Keys.F7;
+                        break;
+                    case VirtualKeys.F8:
+                        key = System.Windows.Forms.Keys.F8;
+                        break;
+                    case VirtualKeys.F9:
+                        key = System.Windows.Forms.Keys.F9;
+                        break;
+                    case VirtualKeys.F10:
+                        key = System.Windows.Forms.Keys.F10;
+                        break;
+                    case VirtualKeys.F11:
+                        key = System.Windows.Forms.Keys.F11;
+                        break;
+                    case VirtualKeys.F12:
+                        key = System.Windows.Forms.Keys.F12;
+                        break;
+                    case VirtualKeys.F13:
+                        key = System.Windows.Forms.Keys.F13;
+                        break;
+                    case VirtualKeys.F14:
+                        key = System.Windows.Forms.Keys.F14;
+                        break;
+                    case VirtualKeys.F15:
+                        key = System.Windows.Forms.Keys.F15;
+                        break;
+                    case VirtualKeys.F16:
+                        key = System.Windows.Forms.Keys.F16;
+                        break;
+                    case VirtualKeys.F17:
+                        key = System.Windows.Forms.Keys.F17;
+                        break;
+                    case VirtualKeys.F18:
+                        key = System.Windows.Forms.Keys.F18;
+                        break;
+                    case VirtualKeys.F19:
+                        key = System.Windows.Forms.Keys.F19;
+                        break;
+                    case VirtualKeys.F20:
+                        key = System.Windows.Forms.Keys.F20;
+                        break;
+                    case VirtualKeys.F21:
+                        key = System.Windows.Forms.Keys.F21;
+                        break;
+                    case VirtualKeys.F22:
+                        key = System.Windows.Forms.Keys.F22;
+                        break;
+                    case VirtualKeys.F23:
+                        key = System.Windows.Forms.Keys.F23;
+                        break;
+                    case VirtualKeys.F24:
+                        key = System.Windows.Forms.Keys.F24;
+                        break;
+                    case VirtualKeys.NumLock:
+                        key = System.Windows.Forms.Keys.NumLock;
+                        break;
+                    case VirtualKeys.Scroll:
+                        key = System.Windows.Forms.Keys.Scroll;
+                        break;
+                }
+
+                return key;
+            }
 		}
 
 		public class MouseLLHook : Hook
@@ -575,27 +965,27 @@ namespace GlobalHooksTest
 					if (m.WParam.ToInt32() == WM_MOUSEMOVE)
 					{
 						if (MouseMove != null)
-							MouseMove(this, new MouseEventArgs(MouseButtons.None, 0, M.pt.X, M.pt.Y, 0));
+							MouseMove(this, new MouseEventArgs(MouseButtons.None, 0, M.pt.X, M.pt.Y, M.time));
 					}
 					else if (m.WParam.ToInt32() == WM_LBUTTONDOWN)
 					{
 						if (MouseDown != null)
-							MouseDown(this, new MouseEventArgs(MouseButtons.Left, 0, M.pt.X, M.pt.Y, 0));
+							MouseDown(this, new MouseEventArgs(MouseButtons.Left, 0, M.pt.X, M.pt.Y, M.time));
 					}
 					else if (m.WParam.ToInt32() == WM_RBUTTONDOWN)
 					{
 						if (MouseDown != null)
-							MouseDown(this, new MouseEventArgs(MouseButtons.Right, 0, M.pt.X, M.pt.Y, 0));
+							MouseDown(this, new MouseEventArgs(MouseButtons.Right, 0, M.pt.X, M.pt.Y, M.time));
 					}
 					else if (m.WParam.ToInt32() == WM_LBUTTONUP)
 					{
 						if (MouseUp != null)
-							MouseUp(this, new MouseEventArgs(MouseButtons.Left, 0, M.pt.X, M.pt.Y, 0));
+							MouseUp(this, new MouseEventArgs(MouseButtons.Left, 0, M.pt.X, M.pt.Y, M.time));
 					}
 					else if (m.WParam.ToInt32() == WM_RBUTTONUP)
 					{
 						if (MouseUp != null)
-							MouseUp(this, new MouseEventArgs(MouseButtons.Right, 0, M.pt.X, M.pt.Y, 0));
+							MouseUp(this, new MouseEventArgs(MouseButtons.Right, 0, M.pt.X, M.pt.Y, M.time));
 					}
 				}
 				else if (m.Msg == _MsgID_MouseLL_HookReplaced)
@@ -605,7 +995,8 @@ namespace GlobalHooksTest
 				}
 			}
 		}
-		public class CallWndProcHook : Hook
+		
+        public class CallWndProcHook : Hook
 		{
 			// Values retreived with RegisterWindowMessage
 			private int _MsgID_CallWndProc;
@@ -659,7 +1050,8 @@ namespace GlobalHooksTest
 				}
 			}
 		}
-		public class GetMsgHook : Hook
+		
+        public class GetMsgHook : Hook
 		{
 			// Values retreived with RegisterWindowMessage
 			private int _MsgID_GetMsg;
@@ -713,5 +1105,78 @@ namespace GlobalHooksTest
 				}
 			}
 		}
+
+        public class SysMsgFilterHook : Hook
+        {
+            private int _MsgID_SysMsgFilter_HookReplaced;
+            private int _MsgID_SysMsgFilter_DialogBox;
+            private int _MsgID_SysMsgFilter_Menu;
+            private int _MsgID_SysMsgFilter_Scrollbar;
+            private int _MsgID_SysMsgFilter_NextWindow;
+
+            public event HookReplacedEventHandler HookReplaced;
+            public event WindowEventHandler DialogBox;
+            public event WindowEventHandler Menu;
+            public event WindowEventHandler Scrollbar;
+            public event WindowEventHandler NextWindow;
+
+            public SysMsgFilterHook(IntPtr Handle) : base(Handle)
+            {
+
+            }
+
+            protected override void OnStart()
+            {
+                _MsgID_SysMsgFilter_HookReplaced = RegisterWindowMessage("WILSON_HOOK_SYSMSGFILTER_REPLACED");
+                _MsgID_SysMsgFilter_DialogBox = RegisterWindowMessage("WILSON_HOOK_MSGF_DIALOGBOX");
+                _MsgID_SysMsgFilter_Menu = RegisterWindowMessage("WILSON_HOOK_MSGF_MENU");
+                _MsgID_SysMsgFilter_Scrollbar = RegisterWindowMessage("WILSON_HOOK_MSGF_SCROLLBAR");
+                _MsgID_SysMsgFilter_NextWindow = RegisterWindowMessage("WILSON_HOOK_MSGF_NEXTWINDOW");
+
+                InitializeSysMsgFilterHook(0, _Handle);
+            }
+
+            protected override void OnStop()
+            {
+                UninitializeSysMsgFilterHook();
+            }
+
+            public override void ProcessWindowMessage(ref System.Windows.Forms.Message m)
+            {
+                if (m.Msg == _MsgID_SysMsgFilter_HookReplaced)
+                {
+                    if (HookReplaced != null)
+                        HookReplaced();
+                }
+                else if (m.Msg == _MsgID_SysMsgFilter_DialogBox)
+                {
+                    if (DialogBox!=null)
+                    {
+                        DialogBox(m.WParam);
+                    }
+                }
+                else if (m.Msg == _MsgID_SysMsgFilter_Menu)
+                {
+                    if (Menu!=null)
+                    {
+                        Menu(m.WParam);
+                    }
+                }
+                else if (m.Msg == _MsgID_SysMsgFilter_Scrollbar)
+                {
+                    if (Scrollbar!=null)
+                    {
+                        Scrollbar(m.WParam);
+                    }
+                }
+                else if (m.Msg == _MsgID_SysMsgFilter_NextWindow)
+                {
+                    if (NextWindow!=null)
+                    {
+                        NextWindow(m.WParam);
+                    }
+                }
+            }
+        }
 	}
 }

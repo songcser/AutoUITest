@@ -1,0 +1,126 @@
+Start: "D:\Program Files\Pro-EMFATIC\Pro-EMFATIC for Femap v3.2 32-bit\Pro-EMFATIC.exe"
+Shell Create: Femap with NX Nastran - [Model1] - [Untitled]
+Shell Create: 
+LeftMouseDown: "Connect""menu item" 7405109
+LeftMouseUp: "Connect""menu item" 7405234
+LeftMouseDown: "Mesh""menu item" 7407640
+LeftMouseUp: "Mesh""menu item" 7407765
+LeftMouseDown: "Modify""menu item" 7408578
+LeftMouseUp: "Modify""menu item" 7408703
+LeftMouseDown: "List""menu item" 7411015
+LeftMouseUp: "List""menu item" 7411125
+LeftMouseDown: "Delete""menu item" 7411687
+LeftMouseUp: "Delete""menu item" 7411796
+LeftMouseDown: "Group""menu item" 7412546
+LeftMouseUp: "Group""menu item" 7412656
+LeftMouseDown: "View""menu item" 7413375
+LeftMouseUp: "View""menu item" 7413468
+LeftMouseDown: "Geometry""menu item" 7414828
+LeftMouseUp: "Geometry""menu item" 7414906
+LeftMouseDown: "Connect""menu item" 7415625
+LeftMouseUp: "Connect""menu item" 7415703
+LeftMouseDown: "Model""menu item" 7416234
+LeftMouseUp: "Model""menu item" 7416359
+LeftMouseDown: "Modify""menu item" 7416937
+LeftMouseUp: "Modify""menu item" 7417062
+LeftMouseDown: "List""menu item" 7417984
+LeftMouseUp: "List""menu item" 7418171
+LeftMouseDown: "Delete""menu item" 7419140
+LeftMouseUp: "Delete""menu item" 7419250
+LeftMouseDown: "Group""menu item" 7419937
+LeftMouseUp: "Group""menu item" 7420015
+LeftMouseDown: "View""menu item" 7420984
+LeftMouseUp: "View""menu item" 7421187
+LeftMouseDown: "Window""menu item" 7421890
+LeftMouseUp: "Window""menu item" 7422046
+LeftMouseDown: "Window""menu item" 7422921
+LeftMouseUp: "Window""menu item" 7423046
+LeftMouseDown: "Connection Property...""menu item" 7426343
+LeftMouseUp: "Connection Property...""menu item" 7426500
+Activate: ""Define Connection Property""window""
+LeftMouseDown: "Friction""text" 7429484
+LeftMouseUp: "Friction""text" 7429656
+LeftMouseDown: "Friction""edit" 7432281
+LeftMouseUp: "Friction""edit" 7432421
+LeftMouseDown: "Friction""edit" 7433921
+LeftMouseUp: "Friction""edit" 7435062
+LeftMouseDown: "Friction""edit" 7436031
+LeftMouseUp: "Friction""edit" 7436156
+LeftMouseDown: "Contact Pair ( BCTSET )""group" 7436875
+LeftMouseUp: "Contact Pair ( BCTSET )""group" 7437093
+LeftMouseDown: "Min Contact Search Dist""edit" 7442625
+LeftMouseUp: "Min Contact Search Dist""edit" 7442890
+LeftMouseDown: "Min Contact Search Dist""edit" 7444687
+LeftMouseUp: "Contact Pair ( BCTSET )""group" 7445062
+LeftMouseDown: "Max Contact Search Dist""edit" 7446312
+LeftMouseUp: "Contact Pair ( BCTSET )""group" 7446468
+LeftMouseDown: "Max Force Iterations""edit" 7447500
+LeftMouseUp: "Max Force Iterations""edit" 7447593
+LeftMouseDown: "Max Force Iterations""edit" 7447937
+LeftMouseUp: "Max Status Iterations""text" 7448109
+LeftMouseDown: "Max Force Iterations""edit" 7451562
+LeftMouseUp: "Max Force Iterations""edit" 7451656
+LeftMouseDown: "Max Force Iterations""edit" 7452546
+LeftMouseUp: "Max Force Iterations""text" 7452718
+LeftMouseDown: "Max Status Iterations""edit" 7457000
+LeftMouseUp: "Max Status Iterations""edit" 7457187
+LeftMouseDown: "Max Status Iterations""edit" 7457515
+LeftMouseUp: "Contact Property ( BCTPARM )""group" 7457828
+LeftMouseDown: "Max Status Iterations""edit" 7460640
+LeftMouseUp: "Max Status Iterations""edit" 7460781
+LeftMouseDown: "Max Status Iterations""edit" 7461109
+LeftMouseUp: "Max Status Iterations""edit" 7462125
+LeftMouseDown: "Contact Property ( BCTPARM )""group" 7463343
+LeftMouseUp: "Contact Property ( BCTPARM )""group" 7463468
+LeftMouseDown: "Force Convergence Tol""edit" 7463734
+LeftMouseUp: "Force Convergence Tol""edit" 7463890
+KeyDown: "Back"
+KeyDown: "Back"
+LeftMouseDown: "Max Status Iterations""edit" 7467687
+LeftMouseUp: "Max Status Iterations""edit" 7467843
+LeftMouseDown: "Num For Convergence""edit" 7470718
+LeftMouseUp: "Num For Convergence""edit" 7470906
+LeftMouseDown: "Drop Down Button""button" 7471578
+LeftMouseUp: "Drop Down Button""button" 7471734
+LeftMouseDown: "1..Percentage of Active""list item" 7476390
+LeftMouseUp: "1..Percentage of Active""list item" 7476625
+LeftMouseDown: "Convergence Criteria""edit" 7479437
+LeftMouseUp: "Convergence Criteria""edit" 7479593
+LeftMouseDown: "Convergence Criteria""edit" 7480187
+LeftMouseUp: "Convergence Criteria""edit" 7480375
+LeftMouseDown: "Drop Down Button""button" 7481203
+LeftMouseUp: "Drop Down Button""button" 7481375
+LeftMouseDown: "Drop Down Button""button" 7485359
+LeftMouseUp: "Drop Down Button""button" 7485546
+LeftMouseDown: "Contact Property ( BCTPARM )""group" 7487250
+LeftMouseUp: "Contact Property ( BCTPARM )""group" 7487421
+LeftMouseDown: "Min Contact Percentage""edit" 7488000
+LeftMouseUp: "Min Contact Percentage""edit" 7488171
+LeftMouseDown: "Min Contact Percentage""edit" 7488671
+LeftMouseUp: "Min Contact Percentage""text" 7489015
+LeftMouseDown: "Min Contact Percentage""edit" 7489546
+LeftMouseUp: "Min Contact Percentage""edit" 7489687
+LeftMouseDown: "Num For Convergence""edit" 7490125
+LeftMouseUp: "Num For Convergence""edit" 7490250
+LeftMouseDown: "Num For Convergence""edit" 7490531
+LeftMouseUp: "Num For Convergence""edit" 7490703
+LeftMouseDown: "Contact Property ( BCTPARM )""group" 7491484
+LeftMouseUp: "Contact Property ( BCTPARM )""group" 7491640
+LeftMouseDown: "Drop Down Button""button" 7492875
+LeftMouseUp: "Drop Down Button""button" 7493015
+LeftMouseDown: "1..Start from Init State""list item" 7495515
+LeftMouseUp: "1..Start from Init State""list item" 7495734
+LeftMouseDown: "Max Force Iterations""edit" 7503640
+LeftMouseUp: "Max Force Iterations""edit" 7503765
+LeftMouseDown: "Max Force Iterations""edit" 7503953
+LeftMouseUp: "Max Force Iterations""edit" 7504140
+LeftMouseDown: "Max Force Iterations""edit" 7504656
+LeftMouseUp: "Max Force Iterations""edit" 7504781
+LeftMouseDown: "Max Force Iterations""edit" 7505015
+LeftMouseUp: "Max Force Iterations""edit" 7505156
+LeftMouseDown: "Max Force Iterations""edit" 7507093
+LeftMouseUp: "Max Force Iterations""edit" 7507218
+LeftMouseDown: "Cancel""button" 7635343
+LeftMouseUp: "Cancel""button" 7635484
+Activate: ""Femap with NX Nastran - [Model1] - [Untitled]""window""
+Stop:

@@ -13,6 +13,7 @@ HHOOK hookKeyboardLL = NULL;
 HHOOK hookMouseLL = NULL;
 HHOOK hookCallWndProc = NULL;
 HHOOK hookGetMsg = NULL;
+HHOOK hookSysMsgFilter = NULL;
 
 //
 // Store the application instance of this module to pass to
@@ -30,6 +31,7 @@ static LRESULT CALLBACK KeyboardLLHookCallback(int code, WPARAM wparam, LPARAM l
 static LRESULT CALLBACK MouseLLHookCallback(int code, WPARAM wparam, LPARAM lparam);
 static LRESULT CALLBACK CallWndProcHookCallback(int code, WPARAM wparam, LPARAM lparam);
 static LRESULT CALLBACK GetMsgHookCallback(int code, WPARAM wparam, LPARAM lparam);
+static LRESULT CALLBACK SysMsgFilterHookCallback(int code, WPARAM wparam, LPARAM lparam);
 
 bool InitializeCbtHook(int threadID, HWND destination)
 {
@@ -355,6 +357,7 @@ static LRESULT CALLBACK CallWndProcHookCallback(int code, WPARAM wparam, LPARAM 
 			SendNotifyMessage(dstWnd, msg, (WPARAM)pCwpStruct->hwnd, pCwpStruct->message);
 			SendNotifyMessage(dstWnd, msg2, pCwpStruct->wParam, pCwpStruct->lParam);
 		}
+		
 	}
 
 	return CallNextHookEx(hookCallWndProc, code, wparam, lparam);
@@ -403,6 +406,75 @@ static LRESULT CALLBACK GetMsgHookCallback(int code, WPARAM wparam, LPARAM lpara
 		{
 			SendNotifyMessage(dstWnd, msg, (WPARAM)pMsg->hwnd, pMsg->message);
 			SendNotifyMessage(dstWnd, msg2, pMsg->wParam, pMsg->lParam);
+		}
+	}
+
+	return CallNextHookEx(hookGetMsg, code, wparam, lparam);
+}
+
+bool InitializeSysMsgFilterHook(int threadID, HWND destiantion)
+{
+	if(g_appInstance == NULL)
+	{
+		return false;
+	}
+
+	if (GetProp(GetDesktopWindow(), "WILSON_HOOK_HWND_SYSMSGFILTER") != NULL)
+	{
+		SendNotifyMessage((HWND)GetProp(GetDesktopWindow(), "WILSON_HOOK_HWND_SYSMSGFILTER"), RegisterWindowMessage("WILSON_HOOK_SYSMSGFILTER_REPLACED"), 0, 0);
+	}
+
+	SetProp(GetDesktopWindow(), "WILSON_HOOK_HWND_SYSMSGFILTER", destiantion);
+
+	hookSysMsgFilter = SetWindowsHookEx(WH_SYSMSGFILTER,(HOOKPROC)SysMsgFilterHookCallback,g_appInstance,threadID);
+
+	return hookSysMsgFilter != NULL;
+}
+
+void UninitializeSysMsgFilterHook()
+{
+	if (hookSysMsgFilter != NULL)
+	{
+		UnhookWindowsHookEx(hookSysMsgFilter);
+	}
+
+	hookSysMsgFilter = NULL;
+}
+
+static LRESULT CALLBACK SysMsgFilterHookCallback(int code, WPARAM wparam, LPARAM lparam)
+{
+	if (code >= 0)
+	{
+		UINT msg = 0;
+		//UINT msg2 = 0;
+		if (code==MSGF_DIALOGBOX)
+		{
+			msg = RegisterWindowMessage("WILSON_HOOK_MSGF_DIALOGBOX");
+		}
+		else if (code == MSGF_MENU)
+		{
+			msg = RegisterWindowMessage("WILSON_HOOK_MSGF_MENU");
+		}
+		else if (code == MSGF_SCROLLBAR)
+		{
+			msg = RegisterWindowMessage("WILSON_HOOK_MSGF_SCROLLBAR");
+		}
+		else if (code == MSGF_NEXTWINDOW)
+		{
+			msg = RegisterWindowMessage("WILSON_HOOK_MSGF_NEXTWINDOW");
+		}
+
+		//msg = RegisterWindowMessage("WILSON_HOOK_SYSMSGFILTER");
+		CBN_CLOSEUP;
+
+		HWND dstWnd = (HWND)GetProp(GetDesktopWindow(), "WILSON_HOOK_HWND_SYSMSGFILTER");
+
+		MSG* pMsg = (MSG*)lparam;
+
+		if (msg != 0 && pMsg->message != msg)
+		{
+			SendNotifyMessage(dstWnd, msg, (WPARAM)pMsg->hwnd, pMsg->message);
+			//SendNotifyMessage(dstWnd, msg2, pMsg->wParam, pMsg->lParam);
 		}
 	}
 

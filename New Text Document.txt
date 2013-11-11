@@ -1,0 +1,109 @@
+An outgoing call cannot be made since the application is dispatching an input-synchronous call. (Exception from HRESULT: 0x8001010D (RPC_E_CANTCALLOUT_ININPUTSYNCCALL))
+
+How found:	Focus
+Name:	"Sample"
+ControlType:	UIA_TreeItemControlTypeId (0xC368)
+LocalizedControlType:	"tree item"
+BoundingRectangle:	{l:1042 t:314 r:1084 b:330}
+IsEnabled:	true
+IsOffscreen:	false
+IsKeyboardFocusable:	true
+HasKeyboardFocus:	true
+ProcessId:	4932
+RuntimeId:	[2A.690798.2.1D1538]
+FrameworkId:	"WinForm"
+ProviderDescription:	"[pid:4932,hwnd:0x0 Annotation:Microsoft: Annotation Proxy (unmanaged:uiautomationcore.dll); Main(parent link):Microsoft: TreeView Item Proxy (unmanaged:uiautomationcore.dll)]"
+IsPeripheral:	[Not supported]
+LiveSettingProperty:	[Not supported]
+HelpText:	""
+FlowsFrom:	[Not supported]
+OptimizeForVisualContent:	[Not supported]
+Annotation.AnnotationAuthor:	[Not supported]
+Annotation.AnnotationTypeId:	[Not supported]
+Annotation.Author:	[Not supported]
+Annotation.DateTime:	[Not supported]
+Annotation.Target:	[Not supported]
+Drag.DropEffect:	[Not supported]
+Drag.DropEffects:	[Not supported]
+Drag.GrabbedItems:	[Not supported]
+Drag.IsGrabbed:	[Not supported]
+DropTarget.DropTargetEffect:	[Not supported]
+DropTarget.DropTargetEffects:	[Not supported]
+ExpandCollapse.ExpandCollapseState:	LeafNode (3)
+LegacyIAccessible.ChildId:	0
+LegacyIAccessible.DefaultAction:	""
+LegacyIAccessible.Description:	""
+LegacyIAccessible.Help:	""
+LegacyIAccessible.KeyboardShortcut:	""
+LegacyIAccessible.Name:	"Sample"
+LegacyIAccessible.Role:	outline item (0x24)
+LegacyIAccessible.State:	selected,focused,focusable,selectable (0x300006)
+LegacyIAccessible.Value:	"Sample"
+ObjectModel.UnderlyingObjectModel:	[Error: calling getter for this property: hr=0x80070057 - The parameter is incorrect.]
+SelectionItem.IsSelected:	true
+SelectionItem.SelectionContainer:	"" tree
+SpreadsheetItem.AnnotationObjects:	[Not supported]
+SpreadsheetItem.AnnotationTypes:	[Not supported]
+SpreadsheetItem.Formula:	[Not supported]
+Style.ExtendedProperties:	[Not supported]
+Style.FillColor:	[Not supported]
+Style.FillPatternColor:	[Not supported]
+Style.FillPatternStyle:	[Not supported]
+Style.Shape:	[Not supported]
+Style.StyleId:	[Not supported]
+Style.StyleName:	[Not supported]
+Value.IsReadOnly:	false
+Value.Value:	"Sample"
+Transform2.CanZoom:	[Not supported]
+Transform2.ZoomLevel:	[Not supported]
+Transform2.ZoomMinimum:	[Not supported]
+Transform2.ZoomMaximum:	[Not supported]
+IsAnnotationPatternAvailable:	[Not supported]
+IsDragPatternAvailable:	[Not supported]
+IsDockPatternAvailable:	false
+IsDropTargetPatternAvailable:	[Not supported]
+IsExpandCollapsePatternAvailable:	true
+IsGridItemPatternAvailable:	false
+IsGridPatternAvailable:	false
+IsInvokePatternAvailable:	false
+IsItemContainerPatternAvailable:	false
+IsLegacyIAccessiblePatternAvailable:	true
+IsMultipleViewPatternAvailable:	false
+IsObjectModelPatternAvailable:	[Not supported]
+IsRangeValuePatternAvailable:	false
+IsScrollItemPatternAvailable:	true
+IsScrollPatternAvailable:	false
+IsSelectionItemPatternAvailable:	true
+IsSelectionPatternAvailable:	false
+IsSpreadsheetItemPatternAvailable:	[Not supported]
+IsSpreadsheetPatternAvailable:	[Not supported]
+IsStylesPatternAvailable:	[Not supported]
+IsSynchronizedInputPatternAvailable:	false
+IsTableItemPatternAvailable:	false
+IsTablePatternAvailable:	false
+IsTextChildPatternAvailable:	[Not supported]
+IsTextEditPatternAvailable:	[Not supported]
+IsTextPatternAvailable:	false
+IsTextPattern2Available:	[Not supported]
+IsTogglePatternAvailable:	false
+IsTransformPatternAvailable:	false
+IsTransform2PatternAvailable:	[Not supported]
+IsValuePatternAvailable:	true
+IsVirtualizedItemPatternAvailable:	false
+IsWindowPatternAvailable:	false
+FirstChild:	[null]
+LastChild:	[null]
+Next:	[null]
+Previous:	[null]
+Other Props:	Object has no additional properties
+Children:	Container has no children
+Ancestors:	"User-Defined S-N Curve Libraries" tree item
+	"" tree
+	"" pane
+	"" pane
+	"Material Library Manger" window
+	"Pro-EMFATIC v3.2" window
+	"Pro-EMFATIC v3.2" tab
+	"Femap with NX Nastran - [Model1] - [Untitled]" window
+	"Desktop" pane
+	[ No Parent ]

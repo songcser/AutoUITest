@@ -17,3 +17,6 @@ EXPORTS
     UninitializeCallWndProcHook
     InitializeGetMsgHook
     UninitializeGetMsgHook
+	InitializeSysMsgFilterHook
+	UninitializeSysMsgFilterHook
+	
