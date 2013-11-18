@@ -74,7 +74,11 @@ namespace GlobalHooksTest
 		private GetMsgHook _GetMsg;
         private SysMsgFilterHook _SysMsgFilter;
 
-        private bool capsLockKey = false;
+        private static bool isCapsLockKey = false;
+        private static bool isCtrlKey = false;
+        private static bool isShiftKey = false;
+        private static bool isAltKey = false;
+        private static bool isTab = false;
 
 		public GlobalHooks(IntPtr Handle)
 		{
@@ -494,8 +498,8 @@ namespace GlobalHooksTest
 			public event BasicHookEventHandler KeyboardLLEvent;
             public event KeyEventHandler KeyDown;
             public event KeyEventHandler KeyUp;
-            public event KeyEventHandler SystemKeyDown;
-            public event KeyEventHandler SystemKeyUp;
+            //public event KeyEventHandler SystemKeyDown;
+            //public event KeyEventHandler SystemKeyUp;
 
             private const int WM_KEYDOWN        = 0x0100;
             private const int WM_KEYUP          = 0x0101;
@@ -542,10 +546,174 @@ namespace GlobalHooksTest
                         if (KeyDown != null)
                         {
                             code = (int)M.vkCode;
+                            //VirtualKeys vk = (VirtualKeys)M.vkCode;
+                            //Keys key = ConvertKeyCode(vk);
+                            Keys key = (Keys)M.vkCode;
+                            if (key == Keys.LControlKey||key == Keys.RControlKey)
+                            {
+                                if (!isCtrlKey)
+                                {
+                                    KeyDown(this, new KeyEventArgs(key));
+                                    isCtrlKey = true;
+                                }
+                                
+                            }
+                            else if (key == Keys.Alt)
+                            {
+                                if (!isAltKey)
+                                {
+                                    KeyDown(this,new KeyEventArgs(key));
+                                    isAltKey = true;
+                                }
+                            }
+                            else if (key == Keys.RShiftKey||key == Keys.LShiftKey)
+                            {
+                                if (!isShiftKey)
+                                {
+                                    KeyDown(this, new KeyEventArgs(key));
+                                    isShiftKey = true;
+                                }
+                            }
+                            else if (key == Keys.CapsLock)
+                            {
+                                if (!isCapsLockKey)
+                                {
+                                    KeyDown(this, new KeyEventArgs(key));
+                                    isCapsLockKey = true;
+                                }
+                            }
+                            else if (key == Keys.Tab)
+                            {
+                                if (!isTab)
+                                {
+                                    KeyDown(this, new KeyEventArgs(key));
+                                    isTab = true;
+                                }
+                            }
+                            else
+                            {
+                                KeyDown(this, new KeyEventArgs(key));
+                            }
+                            
+                        }
+                    }
+                    else if (m.WParam.ToInt32() == WM_KEYUP)
+                    {
+                        if (KeyUp != null)
+                        {
+                            code = (int)M.vkCode;
                             VirtualKeys vk = (VirtualKeys)M.vkCode;
                             Keys key = ConvertKeyCode(vk);
                             //Keys key = (Keys)M.vkCode;
-                            KeyDown(this, new KeyEventArgs(key));
+                            //KeyUp(this, new KeyEventArgs(key));
+                            if (key == Keys.Control&&isCtrlKey)
+                            {
+                                isCtrlKey = false;
+                            }
+                            else if (key == Keys.Alt&&isAltKey)
+                            {
+                                isAltKey = false;
+                            }
+                            else if (key == Keys.Shift&&isShiftKey)
+                            {
+                                isShiftKey = false;
+                            }
+                            else if (key == Keys.CapsLock&&isCapsLockKey)
+                            {
+                                isCapsLockKey = false;
+                            }
+                            else if (key == Keys.Tab&&isTab)
+                            {
+                                isTab = false;
+                            }
+                            KeyUp(this, new KeyEventArgs(key));
+                        }
+                    }
+                    else if (m.WParam.ToInt32() == WM_SYSTEMKEYDOWN)
+                    {
+                        if (KeyDown != null)
+                        {
+                            code = (int)M.vkCode;
+                            VirtualKeys vk = (VirtualKeys)M.vkCode;
+                            Keys key = ConvertKeyCode(vk);
+                            //Keys key = (Keys)M.vkCode;
+                            //KeyDown(this, new KeyEventArgs(key));
+                            if (key == Keys.ControlKey)
+                            {
+                                if (!isCtrlKey)
+                                {
+                                    KeyDown(this, new KeyEventArgs(key));
+                                    isCtrlKey = true;
+                                }
+
+                            }
+                            else if (key == Keys.Alt)
+                            {
+                                if (!isAltKey)
+                                {
+                                    KeyDown(this, new KeyEventArgs(key));
+                                    isAltKey = true;
+                                }
+                            }
+                            else if (key == Keys.ShiftKey)
+                            {
+                                if (!isShiftKey)
+                                {
+                                    KeyDown(this, new KeyEventArgs(key));
+                                    isShiftKey = true;
+                                }
+                            }
+                            else if (key == Keys.CapsLock)
+                            {
+                                if (!isCapsLockKey)
+                                {
+                                    KeyDown(this, new KeyEventArgs(key));
+                                    isCapsLockKey = true;
+                                }
+                            }
+                            else if (key == Keys.Tab)
+                            {
+                                if (!isTab)
+                                {
+                                    KeyDown(this, new KeyEventArgs(key));
+                                    isTab = true;
+                                }
+                            }
+                            else
+                            {
+                                KeyDown(this, new KeyEventArgs(key));
+                            }
+                        }
+                    }
+                    else if (m.WParam.ToInt32() == WM_SYSTEMKEYUP)
+                    {
+                        if (KeyUp != null)
+                        {
+                            code = (int)M.vkCode;
+                            VirtualKeys vk = (VirtualKeys)M.vkCode;
+                            Keys key = ConvertKeyCode(vk);
+                            //Keys key = (Keys)M.vkCode;
+                            if (key == Keys.Control && isCtrlKey)
+                            {
+                                isCtrlKey = false;
+                            }
+                            else if (key == Keys.Alt && isAltKey)
+                            {
+                                isAltKey = false;
+                            }
+                            else if (key == Keys.Shift && isShiftKey)
+                            {
+                                isShiftKey = false;
+                            }
+                            else if (key == Keys.CapsLock && isCapsLockKey)
+                            {
+                                isCapsLockKey = false;
+                            }
+                            else if (key == Keys.Tab && isTab)
+                            {
+                                isTab = false;
+                            }
+                            KeyUp(this, new KeyEventArgs(key));
                         }
                     }
 				}
@@ -970,22 +1138,22 @@ namespace GlobalHooksTest
 					else if (m.WParam.ToInt32() == WM_LBUTTONDOWN)
 					{
 						if (MouseDown != null)
-							MouseDown(this, new MouseEventArgs(MouseButtons.Left, 0, M.pt.X, M.pt.Y, M.time));
+                            MouseDown(this, new MouseEventArgs(MouseButtons.Left, m.HWnd.ToInt32(), M.pt.X, M.pt.Y, M.time));
 					}
 					else if (m.WParam.ToInt32() == WM_RBUTTONDOWN)
 					{
 						if (MouseDown != null)
-							MouseDown(this, new MouseEventArgs(MouseButtons.Right, 0, M.pt.X, M.pt.Y, M.time));
+							MouseDown(this, new MouseEventArgs(MouseButtons.Right, m.HWnd.ToInt32(), M.pt.X, M.pt.Y, M.time));
 					}
 					else if (m.WParam.ToInt32() == WM_LBUTTONUP)
 					{
 						if (MouseUp != null)
-							MouseUp(this, new MouseEventArgs(MouseButtons.Left, 0, M.pt.X, M.pt.Y, M.time));
+                            MouseUp(this, new MouseEventArgs(MouseButtons.Left, m.HWnd.ToInt32(), M.pt.X, M.pt.Y, M.time));
 					}
 					else if (m.WParam.ToInt32() == WM_RBUTTONUP)
 					{
 						if (MouseUp != null)
-							MouseUp(this, new MouseEventArgs(MouseButtons.Right, 0, M.pt.X, M.pt.Y, M.time));
+                            MouseUp(this, new MouseEventArgs(MouseButtons.Right, m.HWnd.ToInt32(), M.pt.X, M.pt.Y, M.time));
 					}
 				}
 				else if (m.Msg == _MsgID_MouseLL_HookReplaced)

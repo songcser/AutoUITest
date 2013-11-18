@@ -1,16 +1,17 @@
-How found:	Mouse move (1235,608)
-	hwnd=0x000B057E 32bit class="WindowsForms10.Window.20808.app.0.3ce0bb8_r16_ad1" style=0x96000000 ex=0x10008
-Name:	"Active"
-ControlType:	UIA_MenuItemControlTypeId (0xC35B)
-LocalizedControlType:	"menu item"
-BoundingRectangle:	{l:1211 t:601 r:1422 b:623}
+How found:	Mouse move (1311,563)
+	hwnd=0x00040852 32bit class="ComboLBox" style=0x54808041 ex=0x88
+Name:	"5 Deg."
+ControlType:	UIA_ListItemControlTypeId (0xC357)
+LocalizedControlType:	"list item"
+BoundingRectangle:	{l:1272 t:556 r:1464 b:569}
 IsEnabled:	true
 IsOffscreen:	false
 IsKeyboardFocusable:	true
 HasKeyboardFocus:	true
 AccessKey:	""
-ProcessId:	668
-ProviderDescription:	"[pid:668,hwnd:0x0 Main(parent link):Microsoft: MSAA Proxy (unmanaged:uiautomationcore.dll)]"
+ProcessId:	4892
+RuntimeId:	[2A.40852.2.80000001.40852.FFFFFFFC.4]
+ProviderDescription:	"[pid:4892,hwnd:0x0 Annotation:Microsoft: Annotation Proxy (unmanaged:uiautomationcore.dll); Main(parent link):Microsoft: MSAA Proxy (unmanaged:uiautomationcore.dll)]"
 IsPeripheral:	[Not supported]
 LiveSettingProperty:	[Not supported]
 IsPassword:	false
@@ -28,16 +29,18 @@ Drag.GrabbedItems:	[Not supported]
 Drag.IsGrabbed:	[Not supported]
 DropTarget.DropTargetEffect:	[Not supported]
 DropTarget.DropTargetEffects:	[Not supported]
-LegacyIAccessible.ChildId:	0
-LegacyIAccessible.DefaultAction:	"Press"
+LegacyIAccessible.ChildId:	4
+LegacyIAccessible.DefaultAction:	"Double Click"
 LegacyIAccessible.Description:	""
 LegacyIAccessible.Help:	""
 LegacyIAccessible.KeyboardShortcut:	""
-LegacyIAccessible.Name:	"Active"
-LegacyIAccessible.Role:	menu item (0xC)
-LegacyIAccessible.State:	focused,hot tracked,focusable (0x100084)
+LegacyIAccessible.Name:	"5 Deg."
+LegacyIAccessible.Role:	list item (0x22)
+LegacyIAccessible.State:	selected,focused,focusable,selectable (0x300006)
 LegacyIAccessible.Value:	""
 ObjectModel.UnderlyingObjectModel:	[Error: calling getter for this property: hr=0x80070057 - The parameter is incorrect.]
+SelectionItem.IsSelected:	true
+SelectionItem.SelectionContainer:	"Searching Increment (?¦Á)" list
 SpreadsheetItem.AnnotationObjects:	[Not supported]
 SpreadsheetItem.AnnotationTypes:	[Not supported]
 SpreadsheetItem.Formula:	[Not supported]
@@ -65,9 +68,9 @@ IsLegacyIAccessiblePatternAvailable:	true
 IsMultipleViewPatternAvailable:	false
 IsObjectModelPatternAvailable:	[Not supported]
 IsRangeValuePatternAvailable:	false
-IsScrollItemPatternAvailable:	false
+IsScrollItemPatternAvailable:	true
 IsScrollPatternAvailable:	false
-IsSelectionItemPatternAvailable:	false
+IsSelectionItemPatternAvailable:	true
 IsSelectionPatternAvailable:	false
 IsSpreadsheetItemPatternAvailable:	[Not supported]
 IsSpreadsheetPatternAvailable:	[Not supported]
@@ -87,14 +90,19 @@ IsVirtualizedItemPatternAvailable:	false
 IsWindowPatternAvailable:	false
 FirstChild:	[null]
 LastChild:	[null]
-Next:	"Edit..." menu item
-Previous:	[null]
+Next:	"10 Deg." list item
+Previous:	"3 Deg." list item
 Other Props:	Object has no additional properties
 Children:	Container has no children
-Ancestors:	"DropDown" menu
-	"Material Library Manger" window
+Ancestors:	"Searching Increment (?¦Á)" list
+	"Searching Increment (?¦Á)" combo box
+	"" pane
+	"Strain History 2" pane
+	"" pane
+	"" pane
+	"toolStripContainer1" pane
 	"Pro-EMFATIC v3.2" window
 	"Pro-EMFATIC v3.2" tab
-	"Femap with NX Nastran - [Model1] - [Untitled]" window
+	"Femap with NX Nastran" window
 	"Desktop" pane
 	[ No Parent ]

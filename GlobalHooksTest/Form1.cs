@@ -8,6 +8,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Windows.Automation;
+using System.Threading;
 
 namespace GlobalHooksTest
 {
@@ -15,11 +16,7 @@ namespace GlobalHooksTest
 	{
 		private System.Windows.Forms.GroupBox groupBox1;
 		private System.Windows.Forms.Button BtnInitCbt;
-		private System.Windows.Forms.Button BtnUninitCbt;
-		private System.Windows.Forms.GroupBox groupBox2;
-		private System.Windows.Forms.Button BtnUninitShell;
-        private System.Windows.Forms.Button BtnInitShell;
-        private System.Windows.Forms.ListBox ListShell;
+        private System.Windows.Forms.Button BtnUninitCbt;
 		private System.ComponentModel.Container components = null;
         private TextBox textBox1;
         private TextBox textBoxMessages;
@@ -45,8 +42,14 @@ namespace GlobalHooksTest
         private ElementManage elemManage;
 		private GlobalHooks _GlobalHooks;
         private static string strPath;
+        private Label label1;
+        private Label label2;
+        private TextBox textBox2;
         private static string filePath;
-        private static StringBuilder log;
+        private Thread workerThread;
+
+        private AutomationEventHandler UIAEventHandler;
+        //private AutomationFocusChangedEventHandler focusHandler = null;
         //private bool comboBoxFlag = true;
 
 		public Form1()
@@ -78,12 +81,12 @@ namespace GlobalHooksTest
             _GlobalHooks.GetMsg.GetMsg += new GlobalHooksTest.GlobalHooks.WndProcEventHandler(_GlobalHooks_GetMsg);
 
             elemManage = new ElementManage();
-            log = new StringBuilder();
+            
             filePath = "E:\\GitHub\\AutoUITest\\log.txt";
 
-            AutomationEventHandler eventHandler = new AutomationEventHandler(elemManage.OnWindowOpenOrClose);
+            //AutomationEventHandler eventHandler = new AutomationEventHandler(elemManage.OnWindowOpenOrClose);
 
-            Automation.AddAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, TreeScope.Children, eventHandler);
+            //Automation.AddAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, TreeScope.Children, eventHandler);
 		}
 
 		protected override void Dispose( bool disposing )
@@ -100,14 +103,14 @@ namespace GlobalHooksTest
                 //_GlobalHooks.SysMsgFilter.Stop();
                 //_GlobalHooks.CallWndProc.Stop();
                 //_GlobalHooks.GetMsg.Stop();
+                StringBuilder builder = elemManage.AnalysisStr();
 
-                if (File.Exists(filePath))
+                
+                using (StreamWriter sw = File.CreateText(textBox2.Text))
                 {
-                    using (StreamWriter sw = File.CreateText(filePath))
-                    {
-                        sw.Write(log.ToString());
-                    }
+                    sw.Write(builder.ToString());
                 }
+                
 
 				if (components != null) 
 				{
@@ -128,97 +131,56 @@ namespace GlobalHooksTest
             this.textBoxMessages = new System.Windows.Forms.TextBox();
             this.BtnUninitCbt = new System.Windows.Forms.Button();
             this.BtnInitCbt = new System.Windows.Forms.Button();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.ListShell = new System.Windows.Forms.ListBox();
-            this.BtnUninitShell = new System.Windows.Forms.Button();
-            this.BtnInitShell = new System.Windows.Forms.Button();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.textBox2 = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
-            this.groupBox2.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.textBoxMessages);
-            this.groupBox1.Controls.Add(this.BtnUninitCbt);
-            this.groupBox1.Controls.Add(this.BtnInitCbt);
-            this.groupBox1.Location = new System.Drawing.Point(4, 60);
+            this.groupBox1.Location = new System.Drawing.Point(4, 114);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(424, 311);
+            this.groupBox1.Size = new System.Drawing.Size(583, 257);
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "CBT Hooks";
+            this.groupBox1.Text = "Output";
             // 
             // textBoxMessages
             // 
-            this.textBoxMessages.Location = new System.Drawing.Point(11, 56);
+            this.textBoxMessages.Location = new System.Drawing.Point(11, 19);
             this.textBoxMessages.Multiline = true;
             this.textBoxMessages.Name = "textBoxMessages";
             this.textBoxMessages.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBoxMessages.Size = new System.Drawing.Size(407, 238);
+            this.textBoxMessages.Size = new System.Drawing.Size(557, 238);
             this.textBoxMessages.TabIndex = 3;
             // 
             // BtnUninitCbt
             // 
-            this.BtnUninitCbt.Location = new System.Drawing.Point(144, 16);
+            this.BtnUninitCbt.Location = new System.Drawing.Point(444, 83);
             this.BtnUninitCbt.Name = "BtnUninitCbt";
             this.BtnUninitCbt.Size = new System.Drawing.Size(128, 32);
             this.BtnUninitCbt.TabIndex = 2;
-            this.BtnUninitCbt.Text = "Uninitialize CBT Hooks";
+            this.BtnUninitCbt.Text = "Stop Record";
             this.BtnUninitCbt.Click += new System.EventHandler(this.BtnUninitCbt_Click);
             // 
             // BtnInitCbt
             // 
-            this.BtnInitCbt.Location = new System.Drawing.Point(8, 16);
+            this.BtnInitCbt.Location = new System.Drawing.Point(287, 82);
             this.BtnInitCbt.Name = "BtnInitCbt";
-            this.BtnInitCbt.Size = new System.Drawing.Size(128, 32);
+            this.BtnInitCbt.Size = new System.Drawing.Size(134, 32);
             this.BtnInitCbt.TabIndex = 1;
-            this.BtnInitCbt.Text = "Initialize CBT Hooks";
+            this.BtnInitCbt.Text = "Start Record";
             this.BtnInitCbt.Click += new System.EventHandler(this.BtnInitCbt_Click);
-            // 
-            // groupBox2
-            // 
-            this.groupBox2.Controls.Add(this.ListShell);
-            this.groupBox2.Controls.Add(this.BtnUninitShell);
-            this.groupBox2.Controls.Add(this.BtnInitShell);
-            this.groupBox2.Location = new System.Drawing.Point(434, 60);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(235, 311);
-            this.groupBox2.TabIndex = 3;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Shell Hooks";
-            // 
-            // ListShell
-            // 
-            this.ListShell.Location = new System.Drawing.Point(12, 56);
-            this.ListShell.Name = "ListShell";
-            this.ListShell.Size = new System.Drawing.Size(216, 238);
-            this.ListShell.TabIndex = 3;
-            // 
-            // BtnUninitShell
-            // 
-            this.BtnUninitShell.Location = new System.Drawing.Point(12, 19);
-            this.BtnUninitShell.Name = "BtnUninitShell";
-            this.BtnUninitShell.Size = new System.Drawing.Size(97, 32);
-            this.BtnUninitShell.TabIndex = 2;
-            this.BtnUninitShell.Text = "Uninitialize Shell Hooks";
-            this.BtnUninitShell.Click += new System.EventHandler(this.BtnUninitShell_Click);
-            // 
-            // BtnInitShell
-            // 
-            this.BtnInitShell.Location = new System.Drawing.Point(129, 19);
-            this.BtnInitShell.Name = "BtnInitShell";
-            this.BtnInitShell.Size = new System.Drawing.Size(99, 32);
-            this.BtnInitShell.TabIndex = 1;
-            this.BtnInitShell.Text = "Initialize Shell Hooks";
-            this.BtnInitShell.Click += new System.EventHandler(this.BtnInitShell_Click);
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(30, 13);
+            this.textBox1.Location = new System.Drawing.Point(119, 13);
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(453, 20);
+            this.textBox1.Size = new System.Drawing.Size(364, 20);
             this.textBox1.TabIndex = 5;
             // 
             // button1
@@ -231,19 +193,49 @@ namespace GlobalHooksTest
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(27, 49);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(82, 13);
+            this.label1.TabIndex = 7;
+            this.label1.Text = "脚本文件路径:";
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(27, 15);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(82, 13);
+            this.label2.TabIndex = 8;
+            this.label2.Text = "应用程序路径:";
+            // 
+            // textBox2
+            // 
+            this.textBox2.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.FileSystem;
+            this.textBox2.Location = new System.Drawing.Point(119, 47);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.Size = new System.Drawing.Size(364, 20);
+            this.textBox2.TabIndex = 9;
+            this.textBox2.Text = "E:\\GitHub\\AutoUITest\\Log\\log.txt";
+            // 
             // Form1
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-            this.ClientSize = new System.Drawing.Size(674, 390);
+            this.ClientSize = new System.Drawing.Size(605, 390);
+            this.Controls.Add(this.textBox2);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.label1);
             this.Controls.Add(this.button1);
+            this.Controls.Add(this.BtnUninitCbt);
             this.Controls.Add(this.textBox1);
-            this.Controls.Add(this.groupBox2);
+            this.Controls.Add(this.BtnInitCbt);
             this.Controls.Add(this.groupBox1);
             this.Name = "Form1";
             this.Text = "Global Hooks Test";
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
-            this.groupBox2.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -259,7 +251,7 @@ namespace GlobalHooksTest
 		private void BtnInitCbt_Click(object sender, System.EventArgs e)
 		{
             _GlobalHooks.Shell.Start();
-            AddText("Start: \"" + strPath + "\"");
+            AddText("Start|\"" + strPath + "\"");
             elemManage.StartProcess(strPath);
             
            
@@ -274,6 +266,18 @@ namespace GlobalHooksTest
             //_GlobalHooks.CallWndProc.Start();
 
            // _GlobalHooks.GetMsg.Start();
+
+            //elemManage.SubscribeToFocusChange();
+
+            //ThreadStart threadDelegate = new ThreadStart(StartUiaWorkerThread);
+            //workerThread = new Thread(threadDelegate);
+            //workerThread.Start();
+            //Thread thread = new Thread(() =>
+            //{
+                //SubscribeToMenu();
+            //});
+            //thread.Start();
+            //thread.Join();
 
 		}
 
@@ -292,16 +296,19 @@ namespace GlobalHooksTest
             _GlobalHooks.Shell.Stop();
 
             //_GlobalHooks.GetMsg.Stop();
+            //elemManage.UnsubscribeFocusChange();
+            AddText("Stop|");
 
-            AddText("Stop:");
 
-            if (File.Exists(filePath))
-            {
-                using (StreamWriter sw = File.CreateText(filePath))
-                {
-                    sw.Write(log.ToString());
-                }
-            }
+            //StringBuilder builder = elemManage.AnalysisStr(log);
+
+            ////if (File.Exists(filePath))
+            ////{
+            //    using (StreamWriter sw = File.CreateText(filePath))
+            //    {
+            //        sw.Write(builder.ToString());
+            //    }
+            ////}
 		}
 
 		private void BtnInitShell_Click(object sender, System.EventArgs e)
@@ -328,18 +335,24 @@ namespace GlobalHooksTest
 			//this.ListCbt.Items.Add("Activate: " + GetWindowName(Handle));
            
             //string name = elemManage.GetElementInfo(elemManage.GetElementFromHandle(Handle));
-            string name = elemManage.GetNameFromHandle(Handle);
-            if (name == null || name == "" || name == " ")
+            if (elemManage.hasWindowsProcess(Handle))
             {
-                //string tmp = elemManage.GetWindowName(Handle);
-                //if (tmp == "" || tmp == null)
-                //{
-                //    return;
-                //}
-                //AddText("Activate: \"" + elemManage.GetWindowName(Handle) + "\"");
-                return;
+                string name = elemManage.AddMainElementFromHandle(Handle);
+                if (name == null || name == "\"" || name == " "||name=="")
+                {
+                    return;
+                }
+                //elemManage.ActivateWnd(Handle);
+                if (elemManage.addHandler(Handle))
+                {
+                    ThreadStart threadDelegate = new ThreadStart(StartUiaWorkerThread);
+                    workerThread = new Thread(threadDelegate);
+                    workerThread.Start();
+                    //AddText("Thread Start");
+                }
+                AddText("Activate|" + name);
             }
-            AddText("Activate: " + name);
+            
             //AddText("Activate: " + GetWindowName(Handle));
 		}
 
@@ -363,18 +376,28 @@ namespace GlobalHooksTest
 
 		private void _GlobalHooks_CbtDestroyWindow(IntPtr Handle)
 		{
+            if (elemManage.hasWindowsProcess(Handle))
+            {
+                string name = elemManage.GetNameFromHandle(Handle);
+                if (name == null || name == "\"" || name == " " || name == "")
+                {
+                    return;
+                }
+                AddText("Destroy|" + name);
+            }
 		//	this.ListCbt.Items.Add("Destroy: " + GetWindowName(Handle));
 		}
 
         private void _GlobalHooks_CbtMoveSize(IntPtr Handle)
         {
-            string name = elemManage.GetWindowName(Handle);
-            elemManage.UpdateCache();
-            if (name==null||name==""||name==" ")
-            {
-                return;
-            }
-            AddText("MoveSize: \"" + name+"\"");
+            
+            //string name = elemManage.GetWindowName(Handle);
+            //elemManage.UpdateCache();
+            //if (name==null||name==""||name==" ")
+            //{
+            //    return;
+            //}
+            //AddText("MoveSize: \"" + name+"\"");
         }
 
         private void _GlobalHooks_CbtSetFocus(IntPtr Handle)
@@ -383,10 +406,10 @@ namespace GlobalHooksTest
 
             //if (name == null || name == "" || name == " ")
             //{
-            //    AddText("SetFocus: \"" + elemManage.GetWindowName(Handle)+"\"");
+            //    AddText("SetFocus: \"" + elemManage.GetWindowName(Handle) + "\"");
             //    return;
             //}
-            //AddText("SetFocus: \"" + name+"\"");
+            //AddText("SetFocus|" + name);
         }
 
         private void _GlobalHooks_SysCommand(int SysCommand, int lParam)
@@ -396,48 +419,85 @@ namespace GlobalHooksTest
 
 		private void _GlobalHooks_ShellWindowActivated(IntPtr Handle)
 		{
-			this.ListShell.Items.Add("Activated: " + elemManage.GetWindowName(Handle));
+			//this.ListShell.Items.Add("Activated: " + elemManage.GetWindowName(Handle));
 		}
 
 		private void _GlobalHooks_ShellWindowCreated(IntPtr Handle)
 		{
 			//this.ListShell.Items.Add("Created: " + elemManage.GetWindowName(Handle));
-            AddText("Shell Create: " + elemManage.GetWindowName(Handle));
             if (elemManage.hasWindowsProcess(Handle))
             {
-
+                string name = elemManage.AddMainElementFromHandle(Handle);
+                if (name == null || name == "\"" || name == " " || name == "")
+                {
+                    return;
+                }
+                //elemManage.ActivateWnd(Handle);
+                if (elemManage.addHandler(Handle))
+                {
+                    ThreadStart threadDelegate = new ThreadStart(StartUiaWorkerThread);
+                    workerThread = new Thread(threadDelegate);
+                    workerThread.Start();
+                    //AddText("ThreadStart:");
+                }
+                AddText("WindowCreate|" + name);
             }
+            //if (elemManage.hasWindowsProcess(Handle))
+            //{
+            //    AddText("WindowCreate|\"" + elemManage.GetWindowName(Handle)+"\"");
+            //}
+            
 		}
 
 		private void _GlobalHooks_ShellWindowDestroyed(IntPtr Handle)
 		{
-			this.ListShell.Items.Add("Destroyed: " + elemManage.GetWindowName(Handle));
+			//this.ListShell.Items.Add("Destroyed: " + elemManage.GetWindowName(Handle));
 		}
 
 		private void _GlobalHooks_ShellRedraw(IntPtr Handle)
 		{
-			this.ListShell.Items.Add("Redraw: " + elemManage.GetWindowName(Handle)+"   "+Handle);
+			//this.ListShell.Items.Add("Redraw: " + elemManage.GetWindowName(Handle)+"   "+Handle);
             //if (elemManage.hasWindowsProcess(Handle))
-            {
-
-            }
+            
 		}
 
 		private void MouseLL_MouseMove(object sender, MouseEventArgs e)
 		{
+            //if (elemManage.IsEnablePoint(e.X,e.Y))
+            //{
+            //    string message = elemManage.GetMenuElementByPoint(e.X, e.Y);
+            //    if (message == "")
+            //    {
+            //        return;
+            //    }
+            //    string msg = string.Format("MouseMove|{0}", message);
+            //    AddText(msg);
+            //}
+
+            //string message = elemManage.GetElementFromPoint(new Point(e.X, e.Y));
+            //if (message == null)
+            //{
+            //    return;
+            //}
+            //string hwnd = elemManage.GetNameFromHandle((IntPtr)e.Clicks);
+            //// string msg = string.Format("Mouse event: {0}-->{1}: ({2},{3}).,{4}", mEvent.ToString(), name, point.X, point.Y, hwnd)
+            ////this.ListCbt.Items.Add("MouseDown:"+ message + e.X + "," + e.Y);
+            //string msg = string.Format("{0}MouseDown|{1}|{2}", e.Button.ToString(), message, e.Delta);
+            //AddText(msg);
 			//this.LblMouse.Text = "Mouse at: " + e.X + ", " + e.Y;
 		}
 
         private void MouseLL_MouseDown(object sender, MouseEventArgs e)
         {
             string message = elemManage.GetElementFromPoint(new Point(e.X, e.Y));
-            if (message == null)
+            if (message == null||message == "")
             {
                 return;
             }
+            string hwnd = elemManage.GetNameFromHandle((IntPtr)e.Clicks);
             // string msg = string.Format("Mouse event: {0}-->{1}: ({2},{3}).,{4}", mEvent.ToString(), name, point.X, point.Y, hwnd)
             //this.ListCbt.Items.Add("MouseDown:"+ message + e.X + "," + e.Y);
-            string msg = string.Format("{0}MouseDown: {1} {2}", e.Button.ToString(), message, e.Delta);
+            string msg = string.Format("{0}MouseDown|{1}|{2}", e.Button.ToString(), message, e.Delta);
             AddText(msg);
             
         }
@@ -446,26 +506,27 @@ namespace GlobalHooksTest
         {
     
             string message = elemManage.GetElementFromPoint(new Point(e.X, e.Y));
-            if (message == null)
+            if (message == null||message=="")
             {
                 return;
             }
+            string hwnd = elemManage.GetNameFromHandle((IntPtr)e.Clicks);
             // string msg = string.Format("Mouse event: {0}-->{1}: ({2},{3}).,{4}", mEvent.ToString(), name, point.X, point.Y, hwnd)
             //this.ListCbt.Items.Add("MouseDown:"+ message + e.X + "," + e.Y);
-            string msg = string.Format("{0}MouseUp: {1} {2}", e.Button.ToString(), message,e.Delta);
+            string msg = string.Format("{0}MouseUp|{1}|{2}", e.Button.ToString(), message,e.Delta);
             AddText(msg);
          
         }
 
         private void KeyboardLL_KeyDown(object sender, KeyEventArgs e)
         {
-            string msg = string.Format("KeyDown: \"{0}\"",e.KeyData);
+            string msg = string.Format("KeyDown|{0}",e.KeyData);
             AddText(msg);
         }
 
         private void KeyboardLL_KeyUp(object sender, KeyEventArgs e)
         {
-            string msg = string.Format("KeyUp: \"{0}\"", e.KeyData);
+            string msg = string.Format("KeyUp|{0}", e.KeyData);
             AddText(msg);
         }
 
@@ -495,7 +556,7 @@ namespace GlobalHooksTest
             }
             else if ((int)Message == WM_INITMENUPOPUP)
             {
-                //string name = elemManage.GetNameFromHandle(lParam);
+                string name = elemManage.GetNameFromHandle(lParam);
                 //uint param = (uint)wParam.ToInt32();
                 //uint loword = param & 0x0000ffff;
                 //uint hiword = (param & 0xffff0000) >> 16;
@@ -517,7 +578,7 @@ namespace GlobalHooksTest
             }
             else if (Message.ToInt32() == CB_SHOWDROPDOWN)
             {
-                AddText("show drop down");
+                //AddText("show drop down");
             }
             else if (Message.ToInt32() == WM_COMMAND)
             {
@@ -545,11 +606,11 @@ namespace GlobalHooksTest
             {
                 //if (wParam == IntPtr.Zero)
                 //{
-                //    //AddText("hidden windows: " + elemManage.GetWindowName(Handle));
+                //    AddText("hidden windows: " + elemManage.GetNameFromHandle(Handle));
                 //}
                 //else
                 //{
-                //    //AddText("show windows: " + elemManage.GetWindowName(Handle));
+                //    AddText("show windows: " + elemManage.GetNameFromHandle(Handle));
                 //}
                 
             }
@@ -643,9 +704,82 @@ namespace GlobalHooksTest
             }
         }
 
+        //public void SubscribeToFocusChange()
+        //{
+        //    focusHandler = new AutomationFocusChangedEventHandler(OnFocusChange);
+        //    Automation.AddAutomationFocusChangedEventHandler(focusHandler);
+        //}
+
+        //private void OnFocusChange(object src, AutomationFocusChangedEventArgs e)
+        //{
+        //    // TODO Add event handling code.
+        //    // The arguments tell you which elements have lost and received focus.
+        //    string message = "";
+        //    Thread thread = new Thread(() =>
+        //    {
+        //        AutomationElement element = src as AutomationElement;
+        //        message = elemManage.GetCurrentElementInfo(element);
+
+
+        //    });
+        //    thread.Start();
+        //    thread.Join();
+        //    AddText("SetFocus " + message);
+        //}
+
+        //public void UnsubscribeFocusChange()
+        //{
+        //    if (focusHandler != null)
+        //    {
+        //        Automation.RemoveAutomationFocusChangedEventHandler(focusHandler);
+        //    }
+        //}
+
+        private void SubscribeToMenu()
+        {
+            UIAEventHandler = new AutomationEventHandler(OnUIAEvent);
+            //Automation.AddAutomationEventHandler(InvokePattern.InvokedEvent,
+            //                        AutomationElement.RootElement,
+            //                        TreeScope.Descendants, UIAEventHandler);
+            Automation.AddAutomationEventHandler(AutomationElement.MenuOpenedEvent,
+                                    AutomationElement.RootElement,
+                                    TreeScope.Descendants, UIAEventHandler);
+            Automation.AddAutomationEventHandler(AutomationElement.MenuClosedEvent,
+                                    AutomationElement.RootElement,
+                                    TreeScope.Descendants,
+                                    UIAEventHandler);
+        }
+        
+        public void OnUIAEvent(object src, AutomationEventArgs args)
+        {
+            AutomationElement element;
+            try
+            {
+                element = src as AutomationElement;
+            }
+            catch
+            {
+                return;
+            }
+            string name = "";
+            if (element == null)
+                name = "null";
+            else
+            {
+                name = element.GetCurrentPropertyValue(
+                        AutomationElement.NameProperty) as string;
+            }
+            if (name.Length == 0) name = "<NoName>";
+            string str = string.Format("Menu {0} : {1}", name,
+                                        args.EventId.ProgrammaticName);
+            //Console.WriteLine(str);
+            AddText(str);
+        }
+        
         private void AddText(string message)
         {
             //this.ListCbt.Items.Add(message);
+            string str = message;
             if (message == null)
             {
                 return;
@@ -660,34 +794,24 @@ namespace GlobalHooksTest
             {
                 message += "\r\n";
             }
-            textBoxMessages.Text = message + textBoxMessages.Text;
-            log.Append(message);
-        }
-
-        private StringBuilder AnalysisStr()
-        {
-            string buf = log.ToString();
-            bool first = true;
-            string cmd;
-            string elem;
-            string time;
-
-            StringBuilder builder = new StringBuilder();
-
-            string[] strLines = buf.Split(new char[] { '\n' });
-            for (int i = 0; i < strLines.Length;i++ )
+            if (!str.EndsWith("\n"))
             {
-                string[] args = strLines[i].Split(new char[] { ' ' });
-                if (first)
-                {
-                    first = false;
-
-
-                }
-
+                str += "\n";
             }
-
-            return builder;
+            textBoxMessages.Text = message + textBoxMessages.Text;
+            elemManage.AddText(str);
         }
+
+        public void StartUiaWorkerThread()
+        {
+            elemManage.RegisterForEvents();
+        }
+
+        private void textBox2_TextChanged(object sender, EventArgs e)
+        {
+            filePath = textBox2.Text;
+        }
+
+        
 	}
 }

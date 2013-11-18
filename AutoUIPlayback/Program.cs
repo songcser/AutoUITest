@@ -9,7 +9,7 @@ namespace AutoUIPlayback
 {
     class Program
     {
-        private static string filePath = "E:\\GitHub\\AutoUITest\\log.txt" ;
+        private static string filePath = "E:\\GitHub\\AutoUITest\\Log\\log.txt" ;
 
         
 
