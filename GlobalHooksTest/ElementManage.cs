@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Threading;
 using System.Diagnostics;
 using System.Windows.Forms;
+using System.IO;
 
 namespace GlobalHooksTest
 {
@@ -286,13 +287,13 @@ namespace GlobalHooksTest
             str.Append(GetElementName(element)).Append("\"");
             //string type = "";
 
-            ControlType controlType = GetElementType(element);
+            //ControlType controlType = GetElementType(element);
             string type = element.Current.LocalizedControlType;
             //if (controlType == ControlType.TreeItem)
             //{
             //    type = "tree item";
             //}
-            //else if (controlType == ControlType.Menu)
+            //if (controlType == ControlType.Menu)
             //{
             //    type = "menu item";
             //}
@@ -338,16 +339,24 @@ namespace GlobalHooksTest
         public string GetElementAutomationId(AutomationElement element)
         {
             string autoIdString = "";
-            object autoIdNoDefault = element.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty, true);
-            if (autoIdNoDefault == AutomationElement.NotSupported)
+            try
             {
-                // TODO Handle the case where you do not wish to proceed using the default value.
+                object autoIdNoDefault = element.GetCurrentPropertyValue(AutomationElement.AutomationIdProperty, true);
+                if (autoIdNoDefault == AutomationElement.NotSupported)
+                {
+                    // TODO Handle the case where you do not wish to proceed using the default value.
+                    return "";
+                }
+                else
+                {
+                    autoIdString = autoIdNoDefault as string;
+                }
+            }
+            catch (System.Exception ex)
+            {
                 return "";
             }
-            else
-            {
-                autoIdString = autoIdNoDefault as string;
-            }
+            
             return autoIdString;
         }
         
@@ -747,8 +756,8 @@ namespace GlobalHooksTest
             string message = "";
             //Thread thread = new Thread(() =>
             //{
-                message = GetCurrentElementInfo(element);
-            //message += "\"" + GetElementName(element) + "\"menu item\"";
+            //message = GetCurrentElementInfo(element);
+            message += "\"" + GetElementName(element) + "\"menu item\"\"";
            // });
             
             //Feedback("MenuOpened event: ");
@@ -1003,6 +1012,11 @@ namespace GlobalHooksTest
         public StringBuilder AnalysisStr()
         {
             string buf = log.ToString();
+            using (StreamWriter sw = File.CreateText("E:\\GitHub\\AutoUITest\\Log2.txt"))
+            {
+                sw.Write(buf);
+            }
+
             bool first = true;
             //bool dFlag = true;
             string cmd = "";
@@ -1240,13 +1254,27 @@ namespace GlobalHooksTest
                 }
                 else if (args[0] == "MenuOpened")
                 {
-                    if (!(cmd == "LeftMouseUp") && !(args[1] == elem)||cmd != "LeftMouseDown")
+                    if (cmd == "LeftMouseDown")
+                    {
+                        continue;
+                    }
+                    else if (cmd == "LeftMouseUp")
+                    {
+                        string arg = elem.Substring(0, args[1].Length-1)+"\"";
+                        if (arg != args[1])
+                        {
+                            string message = string.Format("MenuOpened {0}\n", args[1]);
+                            builder.Append(message);
+                            length = message.Length;
+                        }
+                    }
+                    else
                     {
                         string message = string.Format("MenuOpened {0}\n", args[1]);
                         builder.Append(message);
                         length = message.Length;
                     }
-                    
+                                        
                     
                 }
                 else if (args[0] == "Start")

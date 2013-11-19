@@ -107,6 +107,7 @@ namespace AutoUIPlayback
 
         private static AutomationElement mainWindow = null;
         private static IntPtr mainHandle = IntPtr.Zero;
+        private static bool isClear = false;
  //       private static AutomationElement valueElement = null;
         
         //public AutomationElement MainWindow
@@ -239,6 +240,7 @@ namespace AutoUIPlayback
             }
             else if ("LeftMouseDown " == strList[0])
             {
+                isClear = true;
                 if (strList.Count == 5)
                 {
                     ClickLeftMouse(strList[1], strList[2], strList[3]);
@@ -251,6 +253,10 @@ namespace AutoUIPlayback
                 {
                     return false;
                 }
+            }
+            else if ("LeftMouseUp" == strList[0])
+            {
+                isClear = false;
             }
             
             return true;
@@ -634,7 +640,7 @@ namespace AutoUIPlayback
         {
             ControlType type = element.Current.ControlType;
             
-            if (type == ControlType.RadioButton||type == ControlType.CheckBox||type == ControlType.ListItem)
+            if (type == ControlType.RadioButton||type == ControlType.ListItem)
             {
                 SelectionItemPattern selectionItemPattern = GetSelectionItemPattern(element);
                 selectionItemPattern.Select();
@@ -680,8 +686,40 @@ namespace AutoUIPlayback
             else if (type == ControlType.Edit)
             {
                 element.SetFocus();
-                Thread.Sleep(200);
+                if (isClear)
+                {
+                    ValuePattern currentPattern = GetValuePattern(element);
+                    currentPattern.SetValue("");
+                }
+                //Thread.Sleep(100);
             }
+            else if (type == ControlType.CheckBox)
+            {
+                TogglePattern togglePattern = GetTogglePattern(element);
+                togglePattern.Toggle();
+            }
+        }
+
+        public static TogglePattern GetTogglePattern(AutomationElement element)
+        {
+            object currentPattern;
+            if (!element.TryGetCurrentPattern(TogglePattern.Pattern, out currentPattern))
+            {
+                throw new Exception(string.Format("Element with AutomationId '{0}' and Name '{1}' does not support the TogglePattern.",
+                    element.Current.AutomationId, element.Current.Name));
+            }
+            return currentPattern as TogglePattern;
+        }
+
+        public static ValuePattern GetValuePattern(AutomationElement element)
+        {
+            object currentPattern;
+            if (!element.TryGetCurrentPattern(ValuePattern.Pattern, out currentPattern))
+            {
+                throw new Exception(string.Format("Element with AutomationId '{0}' and Name '{1}' does not support the ValuePattern.",
+                    element.Current.AutomationId, element.Current.Name));
+            }
+            return currentPattern as ValuePattern;
         }
 
         public static ExpandCollapsePattern GetExpandCollapsePattern(AutomationElement element)
@@ -711,7 +749,7 @@ namespace AutoUIPlayback
             Keys k = (Keys)Enum.Parse(typeof(Keys), key, true);
 
             Win32Api.KeyDown(k);
-            Win32Api.KeyDown(k);
+            Win32Api.KeyUp(k);
         }
 
         public void KeyDown(string key)

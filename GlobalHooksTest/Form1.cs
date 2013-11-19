@@ -105,17 +105,16 @@ namespace GlobalHooksTest
                 //_GlobalHooks.GetMsg.Stop();
                 StringBuilder builder = elemManage.AnalysisStr();
 
-                
+
                 using (StreamWriter sw = File.CreateText(textBox2.Text))
                 {
                     sw.Write(builder.ToString());
                 }
+                if (components != null)
+                {
+                    components.Dispose();
+                }
                 
-
-				if (components != null) 
-				{
-					components.Dispose();
-				}
 			}
 			base.Dispose( disposing );
 		}
@@ -299,7 +298,6 @@ namespace GlobalHooksTest
             //elemManage.UnsubscribeFocusChange();
             AddText("Stop|");
 
-
             //StringBuilder builder = elemManage.AnalysisStr(log);
 
             ////if (File.Exists(filePath))
@@ -433,13 +431,13 @@ namespace GlobalHooksTest
                     return;
                 }
                 //elemManage.ActivateWnd(Handle);
-                if (elemManage.addHandler(Handle))
-                {
-                    ThreadStart threadDelegate = new ThreadStart(StartUiaWorkerThread);
-                    workerThread = new Thread(threadDelegate);
-                    workerThread.Start();
-                    //AddText("ThreadStart:");
-                }
+                //if (elemManage.addHandler(Handle))
+                //{
+                //    ThreadStart threadDelegate = new ThreadStart(StartUiaWorkerThread);
+                //    workerThread = new Thread(threadDelegate);
+                //    workerThread.Start();
+                //    //AddText("ThreadStart:");
+                //}
                 AddText("WindowCreate|" + name);
             }
             //if (elemManage.hasWindowsProcess(Handle))
@@ -811,7 +809,6 @@ namespace GlobalHooksTest
         {
             filePath = textBox2.Text;
         }
-
-        
+ 
 	}
 }

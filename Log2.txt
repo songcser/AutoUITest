@@ -1,0 +1,107 @@
+Start|"D:\Program Files\Pro-EMFATIC\Pro-EMFATIC for Femap v3.2 32-bit\Pro-EMFATIC.exe"
+WindowCreate|"Pro-EMFATIC v3.2"window""
+WindowCreate|"Femap with NX Nastran - [Model1] - [Untitled]"window""
+Activate|"Femap with NX Nastran - [Model1] - [Untitled]"window""
+LeftMouseDown|"Geometry"menu item"Menu Bar"menu bar"|31629890
+LeftMouseUp|"Geometry"menu item"Menu Bar"menu bar"|31630031
+MenuOpened|"Geometry"menu item""
+MenuOpened|"Curve - Line"menu item""
+MenuClosed 
+MenuOpened|"Curve - Arc"menu item""
+MenuClosed 
+MenuOpened|"Curve - Circle"menu item""
+LeftMouseDown|"Radius..."menu item"Curve - Circle"menu"|31638171
+LeftMouseUp|"Radius..."menu item"Curve - Circle"menu"|31638328
+MenuClosed 
+MenuClosed 
+Activate|"Locate - Enter Location at Center of Circle"Dialog"Femap with NX Nastran - [Model1] - [Untitled]"window"
+LeftMouseDown|"OK"button"1"|31640421
+LeftMouseUp|"OK"button"1"|31640578
+Activate|"Femap with NX Nastran - [Model1] - [Untitled]"window""
+Activate|"Locate - Enter Location on Circle"Dialog"Femap with NX Nastran - [Model1] - [Untitled]"window"
+KeyDown|NumPad1
+KeyUp|NumPad1
+KeyDown|NumPad0
+KeyUp|NumPad0
+LeftMouseDown|"Y"edit"10012"|31644062
+LeftMouseUp|"Y"edit"10012"|31644953
+KeyDown|NumPad2
+KeyUp|NumPad2
+KeyDown|NumPad0
+KeyUp|NumPad0
+LeftMouseDown|"Z"edit"10013"|31648734
+LeftMouseUp|"Z"edit"10013"|31648859
+KeyDown|Back
+KeyUp|Back
+KeyDown|Back
+KeyUp|Back
+KeyDown|NumPad3
+KeyUp|NumPad3
+KeyDown|NumPad0
+KeyUp|NumPad0
+LeftMouseDown|"OK"button"1"|31653328
+LeftMouseUp|"OK"button"1"|31653500
+Activate|"Femap with NX Nastran - [Model1] - [Untitled]"window""
+Activate|"Locate - Enter Location at Center of Circle"Dialog"Femap with NX Nastran - [Model1] - [Untitled]"window"
+LeftMouseDown|"Cancel"button"2"|31655296
+LeftMouseUp|"Cancel"button"2"|31655406
+Activate|"Femap with NX Nastran - [Model1] - [Untitled]"window""
+LeftMouseDown|"Femap with NX Nastran - [Model1] - [Untitled]"title bar"TitleBar"|31656843
+LeftMouseUp|"Femap with NX Nastran - [Model1] - [Untitled]"window""|31657625
+LeftMouseDown|"Options"menu item"menuStrip1"menu bar"|31668312
+MenuOpened|"OptionsDropDown"menu item""
+LeftMouseUp|"Options"menu item"menuStrip1"menu bar"|31668421
+LeftMouseDown|"User Input Time History"menu item"Options"menu item"|31673765
+LeftMouseUp|"User Input Time History"menu item"Options"menu item"|31673953
+LeftMouseDown|"Life Criterion"combo box"cmbLifeCriterion"|31679484
+LeftMouseUp|"Life Criterion"combo box"cmbLifeCriterion"|31679671
+LeftMouseDown|"Strain Life (Morrow)"list item"Life Criterion"list"|31681828
+LeftMouseUp|"Strain Life (Morrow)"list item"Life Criterion"list"|31682000
+LeftMouseDown|"..."button"btnMaterial"|31684109
+LeftMouseUp|"..."button"btnMaterial"|31684250
+Activate|"Material Library Manger"window"MaterialLibraryMan"
+LeftMouseDown|"SAEJ1099"tree item"Fatigue Material Libraries"tree item"|31686375
+LeftMouseUp|"SAEJ1099"tree item"Fatigue Material Libraries"tree item"|31686484
+LeftMouseDown|"SAEJ1099"tree item"Fatigue Material Libraries"tree item"|31686625
+LeftMouseUp|"SAEJ1099"tree item"Fatigue Material Libraries"tree item"|31686750
+RightMouseDown|"MANTEN"text"MANTEN"item"|31689062
+RightMouseUp|"MANTEN"text"MANTEN"item"|31689203
+LeftMouseDown|"Active"menu item"DropDown"menu"|31689953
+LeftMouseUp|"Active"menu item"DropDown"menu"|31690078
+LeftMouseDown|"Close"button"Close"|31691625
+Activate|"Pro-EMFATIC for Femap v3.2"Dialog"Material Library Manger"window"
+LeftMouseUp|"Close"button"Close"|31691718
+LeftMouseDown|"Yes"button"6"|31697953
+LeftMouseUp|"Yes"button"6"|31698078
+Activate|"Femap with NX Nastran - [Model1] - [Untitled]"window""
+MenuClosed 
+MenuClosed 
+MenuClosed 
+MenuClosed 
+MenuClosed 
+MenuClosed 
+MenuClosed 
+MenuClosed 
+MenuClosed 
+MenuClosed 
+LeftMouseDown|"..."button"btnTensorHistory"|31701437
+LeftMouseUp|"..."button"btnTensorHistory"|31701531
+Activate|"Open"Dialog"Femap with NX Nastran - [Model1] - [Untitled]"window"
+LeftMouseDown|"Strain.csv"list item"FolderView"list"|31703078
+LeftMouseUp|"Strain.csv"list item"FolderView"list"|31703187
+LeftMouseDown|"Open"button"1"|31704093
+LeftMouseUp|"Open"button"1"|31704187
+Activate|"Femap with NX Nastran - [Model1] - [Untitled]"window""
+LeftMouseDown|"Deg. ±"combo box"cmbRange"|31706390
+LeftMouseUp|"Deg. ±"combo box"cmbRange"|31706500
+LeftMouseDown|"45 Deg."list item"Deg. ±"list"|31708187
+LeftMouseUp|"45 Deg."list item"Deg. ±"list"|31708343
+LeftMouseDown|"Searching Increment (∆α)"combo box"cmbSearchingIncrement"|31709250
+LeftMouseUp|"Searching Increment (∆α)"combo box"cmbSearchingIncrement"|31709375
+LeftMouseDown|"5 Deg."list item"Searching Increment (∆α)"list"|31710484
+LeftMouseUp|"5 Deg."list item"Searching Increment (∆α)"list"|31710609
+LeftMouseDown|"Strain History (Output)"check box"cbTimeHistory1"|31712609
+LeftMouseUp|"Strain History (Output)"check box"cbTimeHistory1"|31712734
+LeftMouseDown|"Start Evaluation"button"evaluationToolStrip"tool bar"|31715687
+LeftMouseUp|"Start Evaluation"button"evaluationToolStrip"tool bar"|31715843
+Stop|
