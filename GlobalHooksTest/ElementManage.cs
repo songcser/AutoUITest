@@ -8,6 +8,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Windows.Forms;
 using System.IO;
+using Microsoft.Win32;
 
 namespace GlobalHooksTest
 {
@@ -60,6 +61,8 @@ namespace GlobalHooksTest
         private static extern uint RealGetWindowClass(IntPtr hWnd, StringBuilder pszType, uint cchType);
         [DllImport("user32.dll")]
         private static extern bool GetWindowRect(IntPtr hWnd, ref Rectangle rect);
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
 
         public ElementManage()
         {
@@ -74,6 +77,25 @@ namespace GlobalHooksTest
             UIAeventHandler = new AutomationEventHandler(OnUIAutomationEvent);
             menuClosedHandler = new AutomationEventHandler(OnMenuClosed);
             menuOpenedHandler = new AutomationEventHandler(OnMenuOpened);
+        }
+
+        public bool isTopWindow()
+        {
+            IntPtr hwnd = GetForegroundWindow();
+            uint pid = 0;
+            GetWindowThreadProcessId(hwnd, ref pid);
+            if (pid == mainProcess.Id)
+            {
+                return true;
+            }
+            for (int i = 0; i < proceses.Count;i++ )
+            {
+                if (pid == proceses[i].Id)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public bool addHandler(IntPtr handler)
@@ -757,7 +779,7 @@ namespace GlobalHooksTest
             //Thread thread = new Thread(() =>
             //{
             //message = GetCurrentElementInfo(element);
-            message += "\"" + GetElementName(element) + "\"menu item\"\"";
+            message += "\"" + GetElementName(element) + "\""+element.Current.LocalizedControlType+"\"\"";
            // });
             
             //Feedback("MenuOpened event: ");
@@ -1365,5 +1387,24 @@ namespace GlobalHooksTest
             //    Automation.RemoveAutomationEventHandler(AutomationElement.MenuClosedEvent,targetApp)
             //}
         }
+
+        public string GetUserPath()
+        {
+            RegistryKey folders;
+            folders = OpenRegistryPath(Registry.CurrentUser, @"/software/microsoft/windows/currentversion/explorer/shell folders");
+            string desktop = folders.GetValue("Desktop").ToString();
+            return desktop + "\\Untitled.aui";
+        }
+
+        private RegistryKey OpenRegistryPath(RegistryKey root, string s)
+        {
+            s = s.Remove(0, 1) + @"/";
+            while (s.IndexOf(@"/") != -1)
+            {
+                root = root.OpenSubKey(s.Substring(0, s.IndexOf(@"/")));
+                s = s.Remove(0, s.IndexOf(@"/") + 1);
+            }
+            return root;
+        }  
     }
 }

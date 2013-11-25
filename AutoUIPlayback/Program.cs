@@ -9,12 +9,17 @@ namespace AutoUIPlayback
 {
     class Program
     {
-        private static string filePath = "E:\\GitHub\\AutoUITest\\Log\\log.txt" ;
+        private static string filePath = "E:\\GitHub\\AutoUITest\\Log\\log1.txt" ;
 
         
 
         static void Main(string[] args)
         {
+            if (args.Length != 1)
+            {
+                Console.WriteLine("Please input arguments path");
+            }
+            filePath = args[0];
             Analysis ana = new Analysis();
             using (StreamReader sr = File.OpenText(filePath))
             {

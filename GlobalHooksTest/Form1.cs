@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Windows.Automation;
 using System.Threading;
+using Microsoft.Win32;
 
 namespace GlobalHooksTest
 {
@@ -45,8 +46,9 @@ namespace GlobalHooksTest
         private Label label1;
         private Label label2;
         private TextBox textBox2;
-        private static string filePath;
+        
         private Thread workerThread;
+        private Button button2;
 
         private AutomationEventHandler UIAEventHandler;
         //private AutomationFocusChangedEventHandler focusHandler = null;
@@ -81,9 +83,9 @@ namespace GlobalHooksTest
             _GlobalHooks.GetMsg.GetMsg += new GlobalHooksTest.GlobalHooks.WndProcEventHandler(_GlobalHooks_GetMsg);
 
             elemManage = new ElementManage();
-            
-            filePath = "E:\\GitHub\\AutoUITest\\log.txt";
 
+            //filePath = elemManage.GetUserPath();
+            this.textBox2.Text = elemManage.GetUserPath();
             //AutomationEventHandler eventHandler = new AutomationEventHandler(elemManage.OnWindowOpenOrClose);
 
             //Automation.AddAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, TreeScope.Children, eventHandler);
@@ -135,6 +137,7 @@ namespace GlobalHooksTest
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.textBox2 = new System.Windows.Forms.TextBox();
+            this.button2 = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -217,12 +220,22 @@ namespace GlobalHooksTest
             this.textBox2.Name = "textBox2";
             this.textBox2.Size = new System.Drawing.Size(364, 20);
             this.textBox2.TabIndex = 9;
-            this.textBox2.Text = "E:\\GitHub\\AutoUITest\\Log\\log.txt";
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(497, 44);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(75, 23);
+            this.button2.TabIndex = 10;
+            this.button2.Text = "Open";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // Form1
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(605, 390);
+            this.Controls.Add(this.button2);
             this.Controls.Add(this.textBox2);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
@@ -518,14 +531,22 @@ namespace GlobalHooksTest
 
         private void KeyboardLL_KeyDown(object sender, KeyEventArgs e)
         {
-            string msg = string.Format("KeyDown|{0}",e.KeyData);
-            AddText(msg);
+            if (elemManage.isTopWindow())
+            {
+                string msg = string.Format("KeyDown|{0}", e.KeyData);
+                AddText(msg);
+            }
+            
         }
 
         private void KeyboardLL_KeyUp(object sender, KeyEventArgs e)
         {
-            string msg = string.Format("KeyUp|{0}", e.KeyData);
-            AddText(msg);
+            if (elemManage.isTopWindow())
+            {
+                string msg = string.Format("KeyUp|{0}", e.KeyData);
+                AddText(msg);
+            }
+            
         }
 
         private void _GlobalHooks_CallWndProc(IntPtr Handle, IntPtr Message, IntPtr wParam, IntPtr lParam)
@@ -805,10 +826,24 @@ namespace GlobalHooksTest
             elemManage.RegisterForEvents();
         }
 
-        private void textBox2_TextChanged(object sender, EventArgs e)
+        private void button2_Click(object sender, EventArgs e)
         {
-            filePath = textBox2.Text;
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "可执行文件|*.exe*|所有文件|*.*";
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                string path = openFileDialog.FileName;
+                if (!path.EndsWith(".aui"))
+                {
+                    MessageBox.Show("Please select aui file");
+                    return;
+                }
+                this.textBox2.Text = openFileDialog.FileName;
+                
+            }
         }
- 
+
 	}
 }
