@@ -132,11 +132,11 @@ namespace AutoUIPlayback
             cacheRequest.Add(AutomationElement.AutomationIdProperty);
             cacheRequest.Add(AutomationElement.IsControlElementProperty);
             cacheRequest.Add(AutomationElement.LocalizedControlTypeProperty);
-            cacheRequest.Add(SelectionItemPattern.Pattern);
-            cacheRequest.Add(InvokePattern.Pattern);
-            cacheRequest.Add(ExpandCollapsePattern.Pattern);
-            cacheRequest.Add(ValuePattern.Pattern);
-            cacheRequest.Add(TogglePattern.Pattern);
+//             cacheRequest.Add(SelectionItemPattern.Pattern);
+//             cacheRequest.Add(InvokePattern.Pattern);
+//             cacheRequest.Add(ExpandCollapsePattern.Pattern);
+//             cacheRequest.Add(ValuePattern.Pattern);
+//             cacheRequest.Add(TogglePattern.Pattern);
 
             collectionList = new List<AutomationElementCollection>();
         }
@@ -224,20 +224,20 @@ namespace AutoUIPlayback
             }
             else if ("SendKey " == strList[0])
             {
-                //Thread.Sleep(500);
+                Thread.Sleep(10);
                 SendKey(strList[1]);
             }
             else if ("KeyDown " == strList[0])
             {
-                //Thread.Sleep(500);
+                Thread.Sleep(10);
                 KeyDown(strList[1]);
             }
             else if ("KeyUp " == strList[0])
             {
-                //Thread.Sleep(500);
+                Thread.Sleep(10);
                 KeyUp(strList[1]);
             }
-            else if ("MenuOpened " == strList[0])
+            else if ("OpenMenu " == strList[0])
             {
                 if (strList.Count == 5)
                 {
@@ -259,7 +259,15 @@ namespace AutoUIPlayback
             }
             else if ("Activate " == strList[0])
             {
-                ActivateWindow(strList[1], strList[2]);
+                if (strList.Count == 6)
+                {
+                    ActivateWindow(strList[1], strList[2], strList[3], strList[4]);
+                }
+                else
+                {
+                    ActivateWindow(strList[1], strList[2]);
+                }
+                
             }
             else if ("LeftMouseDown " == strList[0])
             {
@@ -280,8 +288,34 @@ namespace AutoUIPlayback
             else if ("LeftMouseUp" == strList[0])
             {
                 isClear = false;
+//                 if (strList.Count == 5)
+//                 {
+//                     LeftMouseUp(strList[1], strList[2], strList[3]);
+//                 }
+//                 else if (strList.Count == 6)
+//                 {
+//                     LeftMouseUp(strList[1], strList[2], strList[3], strList[4]);
+//                 }
+//                 else
+//                 {
+//                     return false;
+//                 }
             }
-            
+            else if ("Wait " == strList[0])
+            {
+                if (strList.Count == 6)
+                {
+                    WaitControl(strList[1], strList[2], strList[3],strList[4]);
+                }
+                else if (strList.Count == 7)
+                {
+                    WaitControl(strList[1], strList[2], strList[3], strList[4],strList[5]);
+                }
+                else
+                {
+                    return false;
+                }
+            }
             return true;
         }
 
@@ -306,19 +340,8 @@ namespace AutoUIPlayback
             collectionList[i] = elementCollection;
         }
 
-        public void ActivateWindow(string name, string type)
+        private void StartCache(IntPtr handle)
         {
-            //Thread.Sleep(200);
-            IntPtr handle = FindWindow(null, name);
-
-            while (handle == IntPtr.Zero || handle == null)
-            {
-                handle = FindWindow(null, name);
-                Thread.Sleep(50);
-            }
-            mainHandle = handle;
-            mainWindow = AutomationElement.FromHandle(handle);
-
             bool flag = true;
             for (int i = 0; i < windowHandle.Count; i++)
             {
@@ -331,15 +354,24 @@ namespace AutoUIPlayback
             }
             if (flag)
             {
+
                 Condition condition1 = new PropertyCondition(AutomationElement.IsControlElementProperty, true);
                 Condition condition2 = new PropertyCondition(AutomationElement.IsEnabledProperty, true);
+                //Condition condition3 = new NotCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Image));
                 SyncFlag = false;
                 Thread thread = new Thread(() =>
                 {
-                    
                     using (cacheRequest.Activate())
                     {
-                        elementCollection = mainWindow.FindAll(TreeScope.Subtree, new AndCondition(condition1, condition2));
+                        try
+                        {
+                            elementCollection = mainWindow.FindAll(TreeScope.Descendants, new AndCondition(condition1, condition2));
+                        }
+                        catch (System.Exception ex)
+                        {
+
+                        }
+
                     }
                     windowHandle.Add(handle);
                     collectionList.Add(elementCollection);
@@ -347,7 +379,29 @@ namespace AutoUIPlayback
                 });
                 thread.Start();
             }
+        }
+        
+        public void ActivateWindow(string name, string type)
+        {
+            //Thread.Sleep(200);
+            
+            IntPtr handle = FindWindow(null, name);
+            int count = 0;
+            while (handle == IntPtr.Zero || handle == null)
+            {
+                handle = FindWindow(null, name);
+                Thread.Sleep(50);
+                if (count>1200*2)
+                {
+                    return;
+                }
+                count++;
+            }
 
+            mainHandle = handle;
+            mainWindow = AutomationElement.FromHandle(handle);
+
+            StartCache(handle);
             #region MyRegion
             //Condition cond1 = new PropertyCondition(AutomationElement.IsEnabledProperty, true);
             //Condition cond2 = new PropertyCondition(AutomationElement.NameProperty, name);
@@ -412,6 +466,21 @@ namespace AutoUIPlayback
             
         }
 
+        public void ActivateWindow(string name, string type, string pname, string ptype)
+        {
+            if (name == "")
+            {
+                AutomationElement element = FindElement(name, type, pname, ptype);
+                if (element != null)
+                {
+                    mainWindow = element;
+                   
+                }
+                return;
+            }
+            ActivateWindow(name, type);
+        }
+
         public void WaitWindow(string name)
         {
 #region MyRegion
@@ -436,7 +505,7 @@ namespace AutoUIPlayback
             while (handle == IntPtr.Zero || handle == null)
             {
                 handle = FindWindow(null, name);
-                Thread.Sleep(200);
+                Thread.Sleep(50);
             }
 
             int processid = 0;
@@ -459,6 +528,140 @@ namespace AutoUIPlayback
 
             mainHandle = handle;
             mainWindow = AutomationElement.FromHandle(handle);
+
+            StartCache(handle);
+        }
+
+        public void WaitControl(string name, string type, string autoId, string flag)
+        {
+           
+            while (true)
+            {
+                try
+                {
+                    AutomationElement element = FindCurrentElement(name, type, autoId,false);
+                    bool enable = element.Current.IsEnabled;
+                    if (enable == bool.Parse(flag))
+                    {
+                        break;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                	
+                }
+                
+            }
+        }
+
+        public void WaitControl(string name, string type, string pname,string ptype, string flag)
+        {
+
+            while (true)
+            {
+                AutomationElement element = FindCurrentElement(name, type, pname,ptype);
+                bool enable = element.Current.IsEnabled;
+                if (enable == bool.Parse(flag))
+                {
+                    break;
+                }
+            }
+        }
+
+        private void LeftMouseDown(string name, string type, string autoId)
+        {
+            AutomationElement element = FindElement(name, type, autoId);
+            if (element == null)
+            {
+                return;
+                throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
+
+                    element.Current.AutomationId, element.Current.Name));
+            }
+            if (type=="edit")
+            {
+                if (isClear)
+                {
+                    element.SetFocus();
+                    ValuePattern currentPattern = GetValuePattern(element);
+                    //currentPattern.SetValue("");
+                }
+            }
+            Point p = element.GetClickablePoint();
+            SetCursorPos((int)p.X, (int)p.Y);
+
+            mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+
+            //mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+            
+        }
+        
+        private void LeftMouseDown(string name, string type, string pname,string ptype)
+        {
+            if (name == "Scaling Function")
+            {
+            }
+            AutomationElement element = FindElement(name, type, pname,ptype);
+            if (element == null)
+            {
+                return;
+                throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
+
+                    element.Current.AutomationId, element.Current.Name));
+            }
+            if (type == "edit")
+            {
+                if (isClear)
+                {
+                    ValuePattern currentPattern = GetValuePattern(element);
+                    currentPattern.SetValue("");
+                }
+            }
+            Point p = element.GetClickablePoint();
+            SetCursorPos((int)p.X, (int)p.Y);
+
+            mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+
+            //mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+
+        }
+        
+        private void LeftMouseUp(string name, string type, string autoId)
+        {
+            AutomationElement element = FindElement(name, type, autoId);
+            if (element == null)
+            {
+                return;
+                throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
+
+                    element.Current.AutomationId, element.Current.Name));
+            }
+            Point p = element.GetClickablePoint();
+            SetCursorPos((int)p.X, (int)p.Y);
+
+            //mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+
+            mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+
+        }
+
+        private void LeftMouseUp(string name, string type, string pname,string ptype)
+        {
+            AutomationElement element = FindElement(name, type, pname, ptype);
+            if (element == null)
+            {
+                return;
+                throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
+
+                    element.Current.AutomationId, element.Current.Name));
+            }
+            Point p = element.GetClickablePoint();
+            SetCursorPos((int)p.X, (int)p.Y);
+
+            //mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+
+            mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+
         }
 
         public void ClickLeftMouse(string name, string type,string autoId)
@@ -468,10 +671,9 @@ namespace AutoUIPlayback
             if (element == null)
             {
                 return;
-                throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
-
-                    element.Current.AutomationId, element.Current.Name));
+                
             }
+            
             try
             {
                 AnalysisType(element);
@@ -479,7 +681,27 @@ namespace AutoUIPlayback
             }
             catch (System.Exception ex)
             {
+
                 string str = ex.Message;
+                AutomationElement elem = FindCurrentElement(name, type, autoId,true);
+                if (element != null)
+                {
+                    if (type == "menu item")
+                    {
+                        Point p = elem.GetClickablePoint();
+                        SetCursorPos((int)p.X, (int)p.Y);
+
+                        mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+
+                        mouse_event(MOUSEEVENTF_LEFTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+                        
+                    }
+                    else
+                    {
+                        AnalysisType(elem);
+                    }
+                    
+                }
             }
 
             #region MyRegion
@@ -539,6 +761,19 @@ namespace AutoUIPlayback
             catch (System.Exception ex)
             {
                 string str = ex.Message;
+                
+                AutomationElement elem = FindCurrentElement(name, type, pname,ptype);
+                //Point p = element.GetClickablePoint();
+                //SetCursorPos((int)p.X, (int)p.Y);
+
+                //mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+
+                //mouse_event(MOUSEEVENTF_LEFTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+                //Thread.Sleep(1000);
+                if (elem != null)
+                {
+                    AnalysisType(elem);
+                }
             }
         }
 
@@ -556,17 +791,18 @@ namespace AutoUIPlayback
 
             }
 
-            Rect rect = element.Current.BoundingRectangle;
+            //Rect rect = element.Current.BoundingRectangle;
 
-            int IncrementX = (int)(rect.Left + rect.Width / 2);
+            //int IncrementX = (int)(rect.Left + rect.Width / 2);
  
-            int IncrementY = (int)(rect.Top + rect.Height / 2);
+            //int IncrementY = (int)(rect.Top + rect.Height / 2);
 
             //element.SetFocus();
             //Win32Api api = new Win32Api();
             //Win32Api.MouseRightKeyDown(IncrementX, IncrementY);
             //Win32Api.MouseRightKeyUp(IncrementX, IncrementY);
             Point p = element.GetClickablePoint();
+
             //POINTAPI point = new POINTAPI();
             //point.x = (uint)p.X;
             //point.y = (uint)p.Y;
@@ -576,7 +812,7 @@ namespace AutoUIPlayback
 //             AutomationElement elem = AutomationElement.FromHandle(handle);
 //            //Make the cursor position to the element.
             SetCursorPos((int)p.X, (int)p.Y);
-            var value = ((int)p.X) << 16 + (int)p.Y;
+            //var value = ((int)p.X) << 16 + (int)p.Y;
             //SendMessage(mainHandle, WM_RBUTTONDOWN, 0, value);
             //SendMessage(mainHandle, WM_RBUTTONUP, 0, value);
             //Thread.Sleep(200);
@@ -597,9 +833,9 @@ namespace AutoUIPlayback
 //             SendMessage(handle, WM_RBUTTONUP, (IntPtr)IncrementX, (IntPtr)IncrementY);
             //Make the left mouse down and up.
 
-             mouse_event(MOUSEEVENTF_RIGHTDOWN, IncrementX, IncrementY, 0, UIntPtr.Zero);
+             mouse_event(MOUSEEVENTF_RIGHTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
  
-             mouse_event(MOUSEEVENTF_RIGHTUP, IncrementX, IncrementY, 0, UIntPtr.Zero);
+             mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
 
         }
 
@@ -676,7 +912,9 @@ namespace AutoUIPlayback
             int IncrementY = (int)(rect.Top + rect.Height / 2);
 
             //Make the cursor position to the element.
-
+            Point p = element.GetClickablePoint();
+            IncrementX = (int)p.X;
+            IncrementY = (int)p.Y;
             SetCursorPos(IncrementX, IncrementY);
 
             //Make the left mouse down and up.
@@ -708,11 +946,14 @@ namespace AutoUIPlayback
             int IncrementY = (int)(rect.Top + rect.Height / 2);
 
             //Make the cursor position to the element.
-
+            Point p = element.GetClickablePoint();
+            IncrementX = (int)p.X;
+            IncrementY = (int)p.Y;
             SetCursorPos(IncrementX, IncrementY);
-
+            //SetCursorPos((int)p.X, ()p.Y);
             //Make the left mouse down and up.
 
+            
             mouse_event(MOUSEEVENTF_LEFTDOWN, IncrementX, IncrementY, 0, UIntPtr.Zero);
 
             mouse_event(MOUSEEVENTF_LEFTUP, IncrementX, IncrementY, 0, UIntPtr.Zero);
@@ -736,7 +977,7 @@ namespace AutoUIPlayback
                 SelectionItemPattern selectionItemPattern = GetSelectionItemPattern(element);
                 selectionItemPattern.Select();
             }
-            else if (type == ControlType.Button || type == ControlType.MenuBar || type == ControlType.MenuItem)
+            else if (type == ControlType.Button || type == ControlType.MenuBar)
             {
                 InvokePattern invokePattern = element.GetCurrentPattern(InvokePattern.Pattern) as InvokePattern;
                 invokePattern.Invoke();
@@ -745,6 +986,27 @@ namespace AutoUIPlayback
             {
                 ExpandCollapsePattern currentPattern = GetExpandCollapsePattern(element);
                 currentPattern.Expand();
+            }
+            else if (type == ControlType.MenuItem)
+            {
+                try
+                {
+                    ExpandCollapsePattern pattern = element.GetCurrentPattern(ExpandCollapsePattern.Pattern) as ExpandCollapsePattern;
+                    pattern.Expand();
+//                     ExpandCollapsePattern currentPattern = GetExpandCollapsePattern(element);
+//                     if (currentPattern == null)
+//                     {
+//                         return;
+//                     }
+//                     currentPattern.Expand();
+                }
+                catch (System.Exception ex)
+                {
+                    InvokePattern invokePattern = element.GetCurrentPattern(InvokePattern.Pattern) as InvokePattern;
+                    invokePattern.Invoke();
+                }
+                
+                
             }
             else if (type == ControlType.TreeItem)
             {
@@ -772,7 +1034,7 @@ namespace AutoUIPlayback
             else if (type == ControlType.Edit)
             {
                 element.SetFocus();
-                if (isClear)
+                //if (isClear)
                 {
                     ValuePattern currentPattern = GetValuePattern(element);
                     currentPattern.SetValue("");
@@ -783,6 +1045,17 @@ namespace AutoUIPlayback
             {
                 TogglePattern togglePattern = GetTogglePattern(element);
                 togglePattern.Toggle();
+            }
+            else
+            {
+
+                Point p = element.GetClickablePoint();
+                SetCursorPos((int)p.X, (int)p.Y);
+
+                mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+
+                mouse_event(MOUSEEVENTF_LEFTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+                
             }
         }
 
@@ -938,20 +1211,40 @@ namespace AutoUIPlayback
 
         public AutomationElement FindElement( string name, string type,string autoId)
         {
-            while (!SyncFlag) ;
+            
+            int count = 0;
+            while (!SyncFlag)
+            {
+                Thread.Sleep(500);
+                if (count > 10)
+                {
+                    SyncFlag = true;
+                    AutomationElement elem = WalkEnabledElements(mainWindow, name, type, autoId);
+//                     AutomationElement elem = FindCurrentElement(name, type, autoId);
+                    if (elem != null)
+                    {
+                        return elem;
+                    }
+                }
+                count++;
+            }
             
             AutomationElement element = FindCachedElement(name, type, autoId);
             if (element!=null)
             {
                 return element;
             }
+            
             UpdateCache();
             element = FindCachedElement(name, type, autoId);
+            
             if (element != null)
             {
                 return element;
             }
-            element = FindCurrentElement(name, type, autoId);
+            
+            element = FindCurrentElement(name, type, autoId,true);
+            
             if (element!=null)
             {
                 return element;
@@ -1040,7 +1333,30 @@ namespace AutoUIPlayback
                     }
                     
                 }
+                int id = -1;
+                Int32.TryParse(autoId,out id);
+                if (id!=-1)
+                {
+                    for (int i = 0; i < elementCollection.Count; i++)
+                    {
+                        try
+                        {
+                            AutomationElement targetElem = elementCollection[i];
 
+                            if (targetElem != null && name == targetElem.Cached.Name && type == targetElem.Cached.LocalizedControlType)
+                            {
+                                return targetElem;
+                            }
+
+                        }
+                        catch (System.Exception ex)
+                        {
+
+                        }
+
+                    }
+                }
+                
 
                 if (count > 10)
                 {
@@ -1053,14 +1369,20 @@ namespace AutoUIPlayback
             return null;
         }
 
-        public AutomationElement FindCurrentElement(string name, string type, string autoId)
+        public AutomationElement FindCurrentElement(string name, string type, string autoId,bool flag)
         {
             Condition condition1 = new PropertyCondition(AutomationElement.IsControlElementProperty, true);
-            Condition condition2 = new PropertyCondition(AutomationElement.IsEnabledProperty, true);
+            
+            
             //Condition idcondition = new PropertyCondition(AutomationElement.ProcessIdProperty, process.Id);
             Condition nameCondition = new PropertyCondition(AutomationElement.NameProperty, name);
 
-            Condition conditions = new AndCondition(nameCondition, condition2, condition1);
+            Condition conditions = new AndCondition(nameCondition, condition1);
+            if (flag)
+            {
+                Condition enableCondition = new PropertyCondition(AutomationElement.IsEnabledProperty, true);
+                conditions = new AndCondition(conditions, enableCondition);
+            }
             if (type != "")
             {
                 Condition typeCondition = new PropertyCondition(AutomationElement.LocalizedControlTypeProperty, type);
@@ -1099,10 +1421,87 @@ namespace AutoUIPlayback
 
             return null;
         }
-
+        
+        private AutomationElement WalkEnabledElements(AutomationElement rootElement,string name, string type,string autoId)
+        {
+            Condition condition1 = new PropertyCondition(AutomationElement.IsControlElementProperty, true);
+            Condition condition2 = new PropertyCondition(AutomationElement.IsEnabledProperty, true);
+            //Condition condition3 = new NotCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Image));
+            //Condition condition4 = new NotCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text));
+            //Condition condition5 = new NotCondition(new PropertyCondition(AutomationElement.NameProperty, "chart1"));
+            TreeWalker walker = new TreeWalker(new AndCondition(condition1, condition2));
+            AutomationElement elementNode = walker.GetFirstChild(rootElement);
+            int count = 0;
+            while (elementNode != null)
+            {
+                if (elementNode.Current.Name == name&&elementNode.Current.LocalizedControlType==type&&elementNode.Current.AutomationId==autoId)
+                {
+                    return elementNode;
+                }
+                if (elementNode.Current.LocalizedControlType != "image")
+                {
+                    AutomationElement elem = WalkEnabledElements(elementNode,name,type,autoId);
+                    if (elem!=null)
+                    {
+                        return elem;
+                    }
+                }
+                //
+                elementNode = walker.GetNextSibling(elementNode);
+                count++;
+            }
+            return null;
+        }
+        
+        private AutomationElement WalkEnabledElements(AutomationElement rootElement, string name, string type, string pname,string ptype)
+        {
+            Condition condition1 = new PropertyCondition(AutomationElement.IsControlElementProperty, true);
+            Condition condition2 = new PropertyCondition(AutomationElement.IsEnabledProperty, true);
+            //Condition condition3 = new NotCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Image));
+            //Condition condition4 = new NotCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text));
+            //Condition condition5 = new NotCondition(new PropertyCondition(AutomationElement.NameProperty, "chart1"));
+            TreeWalker walker = new TreeWalker(new AndCondition(condition1, condition2));
+            AutomationElement elementNode = walker.GetFirstChild(rootElement);
+            int count = 0;
+            while (elementNode != null)
+            {
+                if (elementNode.Current.Name == name && elementNode.Current.LocalizedControlType == type && rootElement.Current.Name == pname&&rootElement.Current.LocalizedControlType == ptype)
+                {
+                    return elementNode;
+                }
+                if (elementNode.Current.LocalizedControlType != "image")
+                {
+                    AutomationElement elem = WalkEnabledElements(elementNode, name, type, pname,ptype);
+                    if (elem != null)
+                    {
+                        return elem;
+                    }
+                }
+                //
+                elementNode = walker.GetNextSibling(elementNode);
+                count++;
+            }
+            return null;
+        }
+        
         public AutomationElement FindElement(string name, string type, string pname, string ptype)
         {
-            while (!SyncFlag) ;
+            int count = 0;
+            while (!SyncFlag)
+            {
+                Thread.Sleep(500);
+                if (count > 10)
+                {
+                    SyncFlag = true;
+                    AutomationElement elem = WalkEnabledElements(mainWindow, name, type, pname,ptype);
+                    //                     AutomationElement elem = FindCurrentElement(name, type, autoId);
+                    if (elem != null)
+                    {
+                        return elem;
+                    }
+                }
+                count++;
+            }
             #region MyRegion
             //TreeWalker walker = TreeWalker.ControlViewWalker;
             //for (int i = 0; i < elementCollection.Count; i++)
@@ -1133,13 +1532,19 @@ namespace AutoUIPlayback
             //    }
             //} 
             #endregion
+            
             AutomationElement element = FindCachedElement(name, type, pname, ptype);
+            
             if (element!=null)
             {
                 return element;
             }
+            if (name == "Scaling Function")
+            {
+            }
             UpdateCache();
             element = FindCachedElement(name, type, pname, ptype);
+            
             if (element != null)
             {
                 return element;
@@ -1201,7 +1606,7 @@ namespace AutoUIPlayback
                 {
                     try
                     {
-                        if (name == element.Cached.Name && type == element.Cached.LocalizedControlType)
+                        if (name == element.Current.Name && type == element.Current.LocalizedControlType)
                         {
                             AutomationElement parent = walker.GetParent(element);
                             //AutomationElement parent = element.CachedParent;
@@ -1323,6 +1728,7 @@ namespace AutoUIPlayback
             return tarFindElement;
 
         }
+        
         
         public string[] GetString(string str)
         {

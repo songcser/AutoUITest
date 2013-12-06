@@ -16,27 +16,27 @@ namespace GlobalHooksTest
 
 
 		// Functions imported from our unmanaged DLL
-		[DllImport("GlobalCbtHook.dll")]
+        [DllImport("GlobalCbtHook.dll", CallingConvention = CallingConvention.Cdecl)]
 		private static extern bool InitializeCbtHook(int threadID, IntPtr DestWindow);
 		[DllImport("GlobalCbtHook.dll")]
 		private static extern void UninitializeCbtHook();
-		[DllImport("GlobalCbtHook.dll")]
+        [DllImport("GlobalCbtHook.dll", CallingConvention = CallingConvention.Cdecl)]
 		private static extern bool InitializeShellHook(int threadID, IntPtr DestWindow);
 		[DllImport("GlobalCbtHook.dll")]
 		private static extern void UninitializeShellHook();
-		[DllImport("GlobalCbtHook.dll")]
+        [DllImport("GlobalCbtHook.dll", CallingConvention = CallingConvention.Cdecl)]
 		private static extern void InitializeKeyboardHook(int threadID, IntPtr DestWindow);
 		[DllImport("GlobalCbtHook.dll")]
 		private static extern void UninitializeKeyboardHook();
-		[DllImport("GlobalCbtHook.dll")]
+        [DllImport("GlobalCbtHook.dll")]
 		private static extern void InitializeMouseHook(int threadID, IntPtr DestWindow);
 		[DllImport("GlobalCbtHook.dll")]
 		private static extern void UninitializeMouseHook();
-		[DllImport("GlobalCbtHook.dll")]
+        [DllImport("GlobalCbtHook.dll", CallingConvention = CallingConvention.Cdecl)]
 		private static extern void InitializeKeyboardLLHook(int threadID, IntPtr DestWindow);
 		[DllImport("GlobalCbtHook.dll")]
 		private static extern void UninitializeKeyboardLLHook();
-		[DllImport("GlobalCbtHook.dll")]
+        [DllImport("GlobalCbtHook.dll", CallingConvention = CallingConvention.Cdecl)]
 		private static extern void InitializeMouseLLHook(int threadID, IntPtr DestWindow);
 		[DllImport("GlobalCbtHook.dll")]
 		private static extern void UninitializeMouseLLHook();
@@ -602,11 +602,11 @@ namespace GlobalHooksTest
                         if (KeyUp != null)
                         {
                             code = (int)M.vkCode;
-                            VirtualKeys vk = (VirtualKeys)M.vkCode;
-                            Keys key = ConvertKeyCode(vk);
-                            //Keys key = (Keys)M.vkCode;
+                            //VirtualKeys vk = (VirtualKeys)M.vkCode;
+                            //Keys key = ConvertKeyCode(vk);
+                            Keys key = (Keys)M.vkCode;
                             //KeyUp(this, new KeyEventArgs(key));
-                            if (key == Keys.Control&&isCtrlKey)
+                            if (key == Keys.LControlKey&&isCtrlKey||key == Keys.RControlKey&&isCtrlKey)
                             {
                                 isCtrlKey = false;
                             }
@@ -614,7 +614,7 @@ namespace GlobalHooksTest
                             {
                                 isAltKey = false;
                             }
-                            else if (key == Keys.Shift&&isShiftKey)
+                            else if (key == Keys.RShiftKey&&isShiftKey||key == Keys.LShiftKey&&isShiftKey)
                             {
                                 isShiftKey = false;
                             }
@@ -723,6 +723,7 @@ namespace GlobalHooksTest
 						HookReplaced();
 				}
 			}
+            
             private System.Windows.Forms.Keys ConvertKeyCode(VirtualKeys vk)
             {
                 System.Windows.Forms.Keys key = System.Windows.Forms.Keys.Attn;

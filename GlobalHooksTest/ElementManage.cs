@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Windows.Forms;
 using System.IO;
 using Microsoft.Win32;
+using System.Management;
 
 namespace GlobalHooksTest
 {
@@ -40,11 +41,13 @@ namespace GlobalHooksTest
 
         public delegate bool CallBack(IntPtr hwnd, int lParam);
 
-        AutomationElement ElementSubscribeButton;
-        AutomationEventHandler UIAeventHandler;
+        //AutomationElement ElementSubscribeButton;
+        //AutomationEventHandler UIAeventHandler;
         AutomationEventHandler menuOpenedHandler;
         AutomationEventHandler menuClosedHandler;
 
+        public delegate void CallBackMessage(string message);
+        public event CallBackMessage SendMessage;
         private static AutomationElement targetApp;
 
         [DllImport("user32.dll")]
@@ -74,7 +77,7 @@ namespace GlobalHooksTest
             log = new StringBuilder();
             rect = new System.Windows.Rect();
             
-            UIAeventHandler = new AutomationEventHandler(OnUIAutomationEvent);
+            //UIAeventHandler = new AutomationEventHandler(OnUIAutomationEvent);
             menuClosedHandler = new AutomationEventHandler(OnMenuClosed);
             menuOpenedHandler = new AutomationEventHandler(OnMenuOpened);
         }
@@ -114,36 +117,31 @@ namespace GlobalHooksTest
 
         public string AddMainElementFromHandle(IntPtr handle)
         {
-            if (hasWindowsProcess(handle))
+            
+            string str = "";
+            try
             {
-                
-                
-                string str = "";
-                try
+                Thread thread = new Thread(() =>
                 {
-                    Thread thread = new Thread(() =>
+                    AutomationElement element = GetElementFromHandle(handle);
+                    if (IsOwnProcess(element))
                     {
-                        AutomationElement element = GetElementFromHandle(handle);
-                        if (IsOwnProcess(element))
-                        {
-                            targetApp = element;
+                        targetApp = element;
 
-                            str = GetCurrentElementInfo(element);
-                        }
+                        str = GetCurrentElementInfo(element);
+                    }
                         
 
-                    });
-                    thread.Start();
-                    thread.Join();
+                });
+                thread.Start();
+                thread.Join();
 
-                    return str;
-                }
-                catch (System.Exception ex)
-                {
-                    return null;
-                }
+                return str;
             }
-            return null;
+            catch (System.Exception ex)
+            {
+                return null;
+            }
         }
 
         public void OnWindowOpenOrClose(object src, AutomationEventArgs e)
@@ -216,7 +214,7 @@ namespace GlobalHooksTest
             
             //int times = 0;
 
-            mainProcess.WaitForInputIdle();
+            //mainProcess.WaitForInputIdle();
             //while (mainProcess.MainWindowHandle == null || mainProcess.MainWindowHandle == IntPtr.Zero)
             //{
             //    Thread.Sleep(200);
@@ -456,6 +454,10 @@ namespace GlobalHooksTest
                     {
                         return true;
                     }
+                    else
+                    {
+                        return isChildElement(element, processId);
+                    }
                     
                 }
             }
@@ -465,7 +467,30 @@ namespace GlobalHooksTest
             }
             return false;
         }
-        
+
+        private bool isChildElement(AutomationElement element,int processId)
+        {
+            TreeWalker walker = TreeWalker.ControlViewWalker;
+            AutomationElement elementParent;
+            AutomationElement node = element;
+            if (node == AutomationElement.RootElement) return false;
+            do
+            {
+                elementParent = walker.GetParent(node);
+                if (elementParent == AutomationElement.RootElement) 
+                    return false;
+                if (elementParent == targetApp)
+                {
+                    Process process = Process.GetProcessById((int)processId);
+                    proceses.Add(process);
+                    return true;
+                }
+                node = elementParent;
+            }
+            while (true);
+            
+        }
+
         private bool isProcessId(int processId)
         {
             bool flag = false;
@@ -600,20 +625,27 @@ namespace GlobalHooksTest
         public string GetElementFromPoint(Point point)
         {
             System.Windows.Point wpt = new System.Windows.Point(point.X, point.Y);
-            AutomationElement autoElem ;
+            
             string str = "";
             try
             {
                 
                 Thread thread = new Thread(() =>
                 {
-                    autoElem = AutomationElement.FromPoint(wpt);
-                    if (IsOwnProcess(autoElem))
+                    try
                     {
-                        str = GetCurrentElementInfo(autoElem);
+                        AutomationElement autoElem = AutomationElement.FromPoint(wpt);
+                        if (IsOwnProcess(autoElem))
+                        {
+                            str = GetCurrentElementInfo(autoElem);
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        str = null;
                     }
                     
-                        
+                    
                 });
                 thread.Start();
                 thread.Join();
@@ -632,8 +664,6 @@ namespace GlobalHooksTest
                 //return GetCachedElementInfo(targetElem);
                 return null;
             }
-
-           
         }
 
         public AutomationElement GetElementFromHandle(IntPtr handle)
@@ -737,16 +767,16 @@ namespace GlobalHooksTest
             return elementParent;
         }
 
-        public void SubscribeToMenuClosed()
-        {
+        //public void SubscribeToMenuClosed()
+        //{
             
-            //Automation.AddAutomationFocusChangedEventHandler(focusHandler);
-            Automation.AddAutomationEventHandler(AutomationElement.MenuClosedEvent,
-                    AutomationElement.RootElement,
-                    TreeScope.Descendants,
-                    UIAeventHandler);
+        //    //Automation.AddAutomationFocusChangedEventHandler(focusHandler);
+        //    Automation.AddAutomationEventHandler(AutomationElement.MenuClosedEvent,
+        //            AutomationElement.RootElement,
+        //            TreeScope.Descendants,
+        //            UIAeventHandler);
             
-        }
+        //}
 
         public void RegisterForEvents()
         {
@@ -761,29 +791,86 @@ namespace GlobalHooksTest
                     targetApp,
                     TreeScope.Descendants,
                     menuClosedHandler);
+
+                //Automation.AddStructureChangedEventHandler(
+                //    targetApp,
+                //    TreeScope.Descendants,
+                //    OnStructureChangedHandler);
+                //AutomationPropertyChangedEventHandler handler = new AutomationPropertyChangedEventHandler(OnPropertyChangedHandler);
+                //Automation.AddAutomationPropertyChangedEventHandler(
+                //    targetApp,
+                //    TreeScope.Descendants,
+                //    handler,AutomationElement.IsEnabledProperty);
             }
             
+        }
+
+        private void OnPropertyChangedHandler(object src, AutomationEventArgs e)
+        {
+            AutomationElement element = src as AutomationElement;
+
+            try
+            {
+                string name = GetElementName(element);
+                string type = element.Current.LocalizedControlType;
+                if (name != "" && type != "")
+                {
+                    //AddText("StructureChange|" + name + "|" + type);
+                    SendMessage("PropertyChange|\"" + name + "\"" + type + "\"\"");
+                }
+            }
+            catch (System.Exception ex)
+            {
+
+            }
+        }
+
+        private void OnStructureChangedHandler(object src, AutomationEventArgs e)
+        {
+            AutomationElement element = src as AutomationElement;
+            try
+            {
+                string name = GetElementName(element);
+                string type = element.Current.LocalizedControlType;
+                if (name != "" && type != "")
+                {
+                    //AddText("StructureChange|" + name + "|" + type);
+                    //GetMessage("StructureChange|\"" + name + "\"" + type+"\"\"");
+                }
+            }
+            catch (System.Exception ex)
+            {
+            	
+            }
         }
 
         private void OnMenuClosed(object src, AutomationEventArgs e)
         {
             AutomationElement selectionitemElement = src as AutomationElement;
             //Feedback("MenuClosed event: ");
-            AddText("MenuClosed ");
+            //AddText("MenuClosed ");
         }
 
         private void OnMenuOpened(object src, AutomationEventArgs e)
         {
+            
             AutomationElement element = src as AutomationElement;
             string message = "";
             //Thread thread = new Thread(() =>
             //{
             //message = GetCurrentElementInfo(element);
-            message += "\"" + GetElementName(element) + "\""+element.Current.LocalizedControlType+"\"\"";
+            //string time = GetTime();
+            string name = GetElementName(element);
+            if (name=="")
+            {
+                return;
+            }
+            message += "\"" + GetElementName(element) + "\"menu item\"\"";
            // });
             
             //Feedback("MenuOpened event: ");
-            AddText("MenuOpened|"+message);
+            //AddText("OpenMenu|" + message);
+            SendMessage("OpenMenu|" + message);
         }
 
         private void OnFocusChange(object src, AutomationFocusChangedEventArgs e)
@@ -934,14 +1021,12 @@ namespace GlobalHooksTest
         //    return true;
         //}
 
-        public bool hasWindowsProcess(IntPtr hwnd)
+        private bool hasProcessId(int processId)
         {
-            uint processId = 0;
-            //bool flag = true;
-            GetWindowThreadProcessId(hwnd, ref processId);
-            foreach (Process process in proceses)
+            for (int i = 0; i < proceses.Count;i++ )
             {
-                if (process.Id==processId)
+                Process process = proceses[i];
+                if (process.Id == processId)
                 {
                     //flag = false;
                     return true;
@@ -979,6 +1064,15 @@ namespace GlobalHooksTest
                 return true;
             }
             return false;
+        }
+
+        public bool hasWindowsProcess(IntPtr hwnd)
+        {
+            uint processId = 0;
+            //bool flag = true;
+            GetWindowThreadProcessId(hwnd, ref processId);
+
+            return hasProcessId((int)processId);
         }
         
         //private void waitProcess(IntPtr  hwnd)
@@ -1034,7 +1128,7 @@ namespace GlobalHooksTest
         public StringBuilder AnalysisStr()
         {
             string buf = log.ToString();
-            using (StreamWriter sw = File.CreateText("E:\\GitHub\\AutoUITest\\Log2.txt"))
+            using (StreamWriter sw = File.CreateText("E:\\Test\\FunAutoTester\\Log2.txt"))
             {
                 sw.Write(buf);
             }
@@ -1054,7 +1148,18 @@ namespace GlobalHooksTest
             string[] strLines = buf.Split(new char[] { '\n' });
             for (int i = 0; i < strLines.Length; i++)
             {
+                //int t = 0;
                 string[] args = strLines[i].Split(new char[] { '|' });
+                //if (time!=""&&args.Length>1)
+                //{
+                //    t = Int32.Parse(args[2]) - Int32.Parse(time);
+                //    if (t>1000*60*3)
+                //    {
+                //        string message = string.Format("Wait {0}\n", t);
+                //        builder.Append(message);
+                //    }
+                //}
+                
                 if (args[0] == "LeftMouseDown")
                 {
                     if (first)
@@ -1067,8 +1172,8 @@ namespace GlobalHooksTest
                     }
                     else
                     {
-                        int t = Int32.Parse(args[2]) - Int32.Parse(downTime);
-                        if (t < 500 && elem == args[1] && cmd == "LeftMouseUp")
+                        int t = Int32.Parse(args[2]) - Int32.Parse(time);
+                        if (t < 500 && elem == args[1] && cmd == "LeftMouseUp"&&dcFlag)
                         {
                             builder.Remove(builder.Length - length, length);
                             string message = string.Format("DoubleClick {0}\n", args[1]);
@@ -1084,6 +1189,7 @@ namespace GlobalHooksTest
                             length = message.Length;
                             downTime = args[2];
                             dcFlag = true;
+                            
                         }
 
                     }
@@ -1111,6 +1217,7 @@ namespace GlobalHooksTest
                     else
                     {
                         dcFlag = false;
+                        
                     }
 
                 }
@@ -1274,7 +1381,7 @@ namespace GlobalHooksTest
                     builder.Append(message);
                     length = message.Length;
                 }
-                else if (args[0] == "MenuOpened")
+                else if (args[0] == "OpenMenu")
                 {
                     if (cmd == "LeftMouseDown")
                     {
@@ -1282,17 +1389,22 @@ namespace GlobalHooksTest
                     }
                     else if (cmd == "LeftMouseUp")
                     {
-                        string arg = elem.Substring(0, args[1].Length-1)+"\"";
-                        if (arg != args[1])
-                        {
-                            string message = string.Format("MenuOpened {0}\n", args[1]);
-                            builder.Append(message);
-                            length = message.Length;
-                        }
+                        
+                        //string arg = elem.Substring(0, args[1].Length - 1) + "\"";
+                        //if (arg != args[1])
+                        //{
+                        //    string message = string.Format("MenuOpened {0}\n", args[1]);
+                        //    builder.Append(message);
+                        //    length = message.Length;
+                        //}
+                    }
+                    else if (cmd == "OpenMenu"&&args[1] == elem)
+                    {
+                        continue;
                     }
                     else
                     {
-                        string message = string.Format("MenuOpened {0}\n", args[1]);
+                        string message = string.Format("OpenMenu {0}\n", args[1]);
                         builder.Append(message);
                         length = message.Length;
                     }
@@ -1314,6 +1426,12 @@ namespace GlobalHooksTest
                 else if (args[0] == "Stop")
                 {
                     builder.Append("Stop");
+                }
+                else if(args[0] == "Wait")
+                {
+                    string message = string.Format("Wait {0}\n", args[1]);
+                    builder.Append(message);
+                    length = message.Length;
                 }
                 if (args.Length == 3)
                 {
@@ -1341,52 +1459,52 @@ namespace GlobalHooksTest
             log.Append(str); 
         }
 
-        public void SubscribeToInvoke(AutomationElement elementButton)
-        {
-            if (elementButton != null)
-            {
-                Automation.AddAutomationEventHandler(InvokePattern.InvokedEvent,
-                     elementButton, TreeScope.Subtree,
-                     UIAeventHandler);
-                ElementSubscribeButton = elementButton;
-            }
-        }
+        //public void SubscribeToInvoke(AutomationElement elementButton)
+        //{
+        //    if (elementButton != null)
+        //    {
+        //        Automation.AddAutomationEventHandler(InvokePattern.InvokedEvent,
+        //             elementButton, TreeScope.Subtree,
+        //             UIAeventHandler);
+        //        ElementSubscribeButton = elementButton;
+        //    }
+        //}
 
-        private void OnUIAutomationEvent(object src, AutomationEventArgs e)
-        {
-            // Make sure the element still exists. Elements such as tooltips
-            // can disappear before the event is processed.
-            AutomationElement sourceElement;
-            try
-            {
-                sourceElement = src as AutomationElement;
-            }
-            catch (ElementNotAvailableException)
-            {
-                return;
-            }
-            if (e.EventId == InvokePattern.InvokedEvent)
-            {
-                // TODO Add handling code.
-            }
-            else
-            {
-                // TODO Handle any other events that have been subscribed to.
-            }
-        }
+        //private void OnUIAutomationEvent(object src, AutomationEventArgs e)
+        //{
+        //    // Make sure the element still exists. Elements such as tooltips
+        //    // can disappear before the event is processed.
+        //    AutomationElement sourceElement;
+        //    try
+        //    {
+        //        sourceElement = src as AutomationElement;
+        //    }
+        //    catch (ElementNotAvailableException)
+        //    {
+        //        return;
+        //    }
+        //    if (e.EventId == InvokePattern.InvokedEvent)
+        //    {
+        //        // TODO Add handling code.
+        //    }
+        //    else
+        //    {
+        //        // TODO Handle any other events that have been subscribed to.
+        //    }
+        //}
 
-        private void ShutdownUIA()
-        {
-            if (UIAeventHandler != null)
-            {
-                Automation.RemoveAutomationEventHandler(InvokePattern.InvokedEvent,
-                    ElementSubscribeButton, UIAeventHandler);
-            }
-            //if (menuClosedHandler != null)
-            //{
-            //    Automation.RemoveAutomationEventHandler(AutomationElement.MenuClosedEvent,targetApp)
-            //}
-        }
+        //private void ShutdownUIA()
+        //{
+        //    if (UIAeventHandler != null)
+        //    {
+        //        Automation.RemoveAutomationEventHandler(InvokePattern.InvokedEvent,
+        //            ElementSubscribeButton, UIAeventHandler);
+        //    }
+        //    //if (menuClosedHandler != null)
+        //    //{
+        //    //    Automation.RemoveAutomationEventHandler(AutomationElement.MenuClosedEvent,targetApp)
+        //    //}
+        //}
 
         public string GetUserPath()
         {
@@ -1405,6 +1523,64 @@ namespace GlobalHooksTest
                 s = s.Remove(0, s.IndexOf(@"/") + 1);
             }
             return root;
-        }  
+        }
+
+        public string GetTime()
+        {
+            //System.Management.ObjectQuery MyQuery = new System.Management.ObjectQuery("SELECT * FROM Win32_OperatingSystem");
+            ////System.Management.ObjectQuery MyQuery = new System.Management.ObjectQuery("SELECT * FROM Win32_ComputerSystem");
+            //System.Management.ManagementScope MyScope = new System.Management.ManagementScope();
+            //ManagementObjectSearcher MySearch = new ManagementObjectSearcher(MyScope, MyQuery);
+            //ManagementObjectCollection MyCollection = MySearch.Get();
+            //string StrInfo = "";
+            //foreach (ManagementObject MyObject in MyCollection)
+            //{
+            //    //显示系统基本信息
+            //    StrInfo = MyObject.GetText(TextFormat.Mof);
+            //    //string[] MyString = { "" };
+            //    //重新启动计算机
+            //    //MyObject.InvokeMethod("Reboot",MyString);								
+            //    //关闭计算机
+            //    //MyObject.InvokeMethod("Shutdown",MyString);				
+            //}
+            ////string InstallDate = StrInfo.Substring(StrInfo.LastIndexOf("InstallDate") + 15, 14);
+            //string LastBootUpTime = StrInfo.Substring(StrInfo.LastIndexOf("LastBootUpTime") + 18, 14);
+            
+            //int time = (int)DateTime.Now.Ticks / 1000;
+            //DateTime d1 = DateTime.Now;
+            //DateTime d2 = new DateTime(1970, 1, 1);
+            //TimeSpan ts = d1 - d2;
+            //double d = ts.TotalMilliseconds;
+            //DateTime t1 = DateTime.Now;
+            //TimeSpan t22 = new TimeSpan(t1.Ticks);
+            //int time2 = Convert.ToInt32(t22.TotalSeconds);
+            //return time2+"";
+            return "";
+        }
+
+        public void SetListener()
+        {
+            Point point = Control.MousePosition;
+            System.Windows.Point wpt = new System.Windows.Point(point.X, point.Y);
+            AutomationElement element = AutomationElement.FromPoint(wpt);
+
+
+            string message = "Wait|";
+            bool enable = element.Current.IsEnabled;
+            if (enable)
+            {
+                message += GetCurrentElementInfo(element)+"true";
+            }
+            else
+            {
+                message += GetCurrentElementInfo(element) + "false";
+            }
+            SendMessage(message);
+            //AutomationPropertyChangedEventHandler handler = new AutomationPropertyChangedEventHandler(OnPropertyChangedHandler);
+            //Automation.AddAutomationPropertyChangedEventHandler(
+            //        element,
+            //        TreeScope.Descendants,
+            //        handler, AutomationElement.IsEnabledProperty);
+        }
     }
 }

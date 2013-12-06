@@ -266,6 +266,22 @@ static LRESULT CALLBACK KeyboardLLHookCallback(int code, WPARAM wparam, LPARAM l
 
 		if (msg != 0)
 			SendNotifyMessage(dstWnd, msg, wparam, lparam);
+		KBDLLHOOKSTRUCT * pKeyboardStruct = (KBDLLHOOKSTRUCT *)lparam;
+		/*if (pKeyboardStruct == NULL)
+		{
+			return false;
+		}
+*/
+		
+		int vkCode = pKeyboardStruct->vkCode;
+		if (vkCode == VK_F1||vkCode == VK_F2)
+		{
+			return 1;
+		}
+		else 
+		{
+			return CallNextHookEx(hookKeyboardLL, code, wparam, lparam);
+		}
 	}
 
 	return CallNextHookEx(hookKeyboardLL, code, wparam, lparam);

@@ -53,11 +53,12 @@ namespace GlobalHooksTest
         private AutomationEventHandler UIAEventHandler;
         //private AutomationFocusChangedEventHandler focusHandler = null;
         //private bool comboBoxFlag = true;
+        private bool stopFlag = true;
 
 		public Form1()
 		{
 			InitializeComponent();
-
+            Control.CheckForIllegalCrossThreadCalls = false;
 			// Instantiate our GlobalHooks object
 			_GlobalHooks = new GlobalHooks(this.Handle);
 
@@ -83,6 +84,7 @@ namespace GlobalHooksTest
             _GlobalHooks.GetMsg.GetMsg += new GlobalHooksTest.GlobalHooks.WndProcEventHandler(_GlobalHooks_GetMsg);
 
             elemManage = new ElementManage();
+            elemManage.SendMessage += new ElementManage.CallBackMessage(_GetMessage);
 
             //filePath = elemManage.GetUserPath();
             this.textBox2.Text = elemManage.GetUserPath();
@@ -105,18 +107,24 @@ namespace GlobalHooksTest
                 //_GlobalHooks.SysMsgFilter.Stop();
                 //_GlobalHooks.CallWndProc.Stop();
                 //_GlobalHooks.GetMsg.Stop();
-                StringBuilder builder = elemManage.AnalysisStr();
-
-
-                using (StreamWriter sw = File.CreateText(textBox2.Text))
+                if (stopFlag)
                 {
-                    sw.Write(builder.ToString());
+                    StringBuilder builder = elemManage.AnalysisStr();
+
+                    using (StreamWriter sw = File.CreateText(textBox2.Text))
+                    {
+
+                        sw.Write(builder.ToString());
+
+                    }
                 }
+
                 if (components != null)
                 {
                     components.Dispose();
                 }
                 
+
 			}
 			base.Dispose( disposing );
 		}
@@ -202,7 +210,7 @@ namespace GlobalHooksTest
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(82, 13);
             this.label1.TabIndex = 7;
-            this.label1.Text = "脚本文件路径:";
+            this.label1.Text = "输出脚本文件:";
             // 
             // label2
             // 
@@ -245,7 +253,7 @@ namespace GlobalHooksTest
             this.Controls.Add(this.BtnInitCbt);
             this.Controls.Add(this.groupBox1);
             this.Name = "Form1";
-            this.Text = "Global Hooks Test";
+            this.Text = "AutoUI Record";
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
@@ -262,6 +270,7 @@ namespace GlobalHooksTest
 
 		private void BtnInitCbt_Click(object sender, System.EventArgs e)
 		{
+            string time = elemManage.GetTime();
             _GlobalHooks.Shell.Start();
             AddText("Start|\"" + strPath + "\"");
             elemManage.StartProcess(strPath);
@@ -295,6 +304,8 @@ namespace GlobalHooksTest
 
 		private void BtnUninitCbt_Click(object sender, System.EventArgs e)
 		{
+            _GlobalHooks.Shell.Stop();
+
 			_GlobalHooks.CBT.Stop();
             //AddText("CBT hook Remove");
             _GlobalHooks.MouseLL.Stop();
@@ -305,21 +316,21 @@ namespace GlobalHooksTest
 
             //_GlobalHooks.CallWndProc.Stop();
 
-            _GlobalHooks.Shell.Stop();
+            
 
             //_GlobalHooks.GetMsg.Stop();
             //elemManage.UnsubscribeFocusChange();
-            AddText("Stop|");
+            AddText("Stop");
 
-            //StringBuilder builder = elemManage.AnalysisStr(log);
+            stopFlag = false;
+            StringBuilder builder = elemManage.AnalysisStr();
+            
+            using (StreamWriter sw = File.CreateText(textBox2.Text))
+            {
 
-            ////if (File.Exists(filePath))
-            ////{
-            //    using (StreamWriter sw = File.CreateText(filePath))
-            //    {
-            //        sw.Write(builder.ToString());
-            //    }
-            ////}
+                sw.Write(builder.ToString());
+
+            }
 		}
 
 		private void BtnInitShell_Click(object sender, System.EventArgs e)
@@ -344,7 +355,7 @@ namespace GlobalHooksTest
 		private void _GlobalHooks_CbtActivate(IntPtr Handle)
 		{
 			//this.ListCbt.Items.Add("Activate: " + GetWindowName(Handle));
-           
+            string time = elemManage.GetTime();
             //string name = elemManage.GetElementInfo(elemManage.GetElementFromHandle(Handle));
             if (elemManage.hasWindowsProcess(Handle))
             {
@@ -387,6 +398,7 @@ namespace GlobalHooksTest
 
 		private void _GlobalHooks_CbtDestroyWindow(IntPtr Handle)
 		{
+            string time = elemManage.GetTime();
             if (elemManage.hasWindowsProcess(Handle))
             {
                 string name = elemManage.GetNameFromHandle(Handle);
@@ -436,6 +448,7 @@ namespace GlobalHooksTest
 		private void _GlobalHooks_ShellWindowCreated(IntPtr Handle)
 		{
 			//this.ListShell.Items.Add("Created: " + elemManage.GetWindowName(Handle));
+            //string time = elemManage.GetTime();
             if (elemManage.hasWindowsProcess(Handle))
             {
                 string name = elemManage.AddMainElementFromHandle(Handle);
@@ -531,22 +544,42 @@ namespace GlobalHooksTest
 
         private void KeyboardLL_KeyDown(object sender, KeyEventArgs e)
         {
+            //string time = elemManage.GetTime();
             if (elemManage.isTopWindow())
             {
-                string msg = string.Format("KeyDown|{0}", e.KeyData);
-                AddText(msg);
+                Keys key = e.KeyData;
+                if (key == Keys.F1)
+                {
+                    ThreadStart threadDelegate = new ThreadStart(SetListener);
+                    workerThread = new Thread(threadDelegate);
+                    workerThread.Start();
+                }
+                else
+                {
+                    string msg = string.Format("KeyDown|{0}", e.KeyData);
+                    AddText(msg);
+                }
+
+//                 string msg = string.Format("KeyDown|{0}", e.KeyData);
+//                 AddText(msg);
             }
             
         }
 
         private void KeyboardLL_KeyUp(object sender, KeyEventArgs e)
         {
+            //string time = elemManage.GetTime();
             if (elemManage.isTopWindow())
             {
-                string msg = string.Format("KeyUp|{0}", e.KeyData);
-                AddText(msg);
+                Keys key = e.KeyData;
+                if (key != Keys.F1)
+                {
+                    string msg = string.Format("KeyUp|{0}", e.KeyData);
+                    AddText(msg);
+                }
+//                 string msg = string.Format("KeyUp|{0}", e.KeyData);
+//                 AddText(msg);
             }
-            
         }
 
         private void _GlobalHooks_CallWndProc(IntPtr Handle, IntPtr Message, IntPtr wParam, IntPtr lParam)
@@ -754,50 +787,51 @@ namespace GlobalHooksTest
         //    }
         //}
 
-        private void SubscribeToMenu()
-        {
-            UIAEventHandler = new AutomationEventHandler(OnUIAEvent);
-            //Automation.AddAutomationEventHandler(InvokePattern.InvokedEvent,
-            //                        AutomationElement.RootElement,
-            //                        TreeScope.Descendants, UIAEventHandler);
-            Automation.AddAutomationEventHandler(AutomationElement.MenuOpenedEvent,
-                                    AutomationElement.RootElement,
-                                    TreeScope.Descendants, UIAEventHandler);
-            Automation.AddAutomationEventHandler(AutomationElement.MenuClosedEvent,
-                                    AutomationElement.RootElement,
-                                    TreeScope.Descendants,
-                                    UIAEventHandler);
-        }
+        //private void SubscribeToMenu()
+        //{
+        //    UIAEventHandler = new AutomationEventHandler(OnUIAEvent);
+        //    //Automation.AddAutomationEventHandler(InvokePattern.InvokedEvent,
+        //    //                        AutomationElement.RootElement,
+        //    //                        TreeScope.Descendants, UIAEventHandler);
+        //    Automation.AddAutomationEventHandler(AutomationElement.MenuOpenedEvent,
+        //                            AutomationElement.RootElement,
+        //                            TreeScope.Descendants, UIAEventHandler);
+        //    Automation.AddAutomationEventHandler(AutomationElement.MenuClosedEvent,
+        //                            AutomationElement.RootElement,
+        //                            TreeScope.Descendants,
+        //                            UIAEventHandler);
+        //}
         
-        public void OnUIAEvent(object src, AutomationEventArgs args)
-        {
-            AutomationElement element;
-            try
-            {
-                element = src as AutomationElement;
-            }
-            catch
-            {
-                return;
-            }
-            string name = "";
-            if (element == null)
-                name = "null";
-            else
-            {
-                name = element.GetCurrentPropertyValue(
-                        AutomationElement.NameProperty) as string;
-            }
-            if (name.Length == 0) name = "<NoName>";
-            string str = string.Format("Menu {0} : {1}", name,
-                                        args.EventId.ProgrammaticName);
-            //Console.WriteLine(str);
-            AddText(str);
-        }
+        //public void OnUIAEvent(object src, AutomationEventArgs args)
+        //{
+        //    AutomationElement element;
+        //    try
+        //    {
+        //        element = src as AutomationElement;
+        //    }
+        //    catch
+        //    {
+        //        return;
+        //    }
+        //    string name = "";
+        //    if (element == null)
+        //        name = "null";
+        //    else
+        //    {
+        //        name = element.GetCurrentPropertyValue(
+        //                AutomationElement.NameProperty) as string;
+        //    }
+        //    if (name.Length == 0) name = "<NoName>";
+        //    string str = string.Format("Menu {0} : {1}", name,
+        //                                args.EventId.ProgrammaticName);
+        //    //Console.WriteLine(str);
+        //    AddText(str);
+        //}
         
-        private void AddText(string message)
+        private void AddText(string m)
         {
             //this.ListCbt.Items.Add(message);
+            string message = m;
             string str = message;
             if (message == null)
             {
@@ -829,7 +863,7 @@ namespace GlobalHooksTest
         private void button2_Click(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "可执行文件|*.exe*|所有文件|*.*";
+            openFileDialog.Filter = "Script file|*.aui";
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == DialogResult.OK)
@@ -845,5 +879,15 @@ namespace GlobalHooksTest
             }
         }
 
-	}
+        private void _GetMessage(string message)
+        {
+            AddText(message);
+        }
+
+        private void SetListener()
+        {
+            elemManage.SetListener();
+        }
+	
+    }
 }

@@ -9,13 +9,11 @@ namespace AutoUIPlayback
 {
     class Program
     {
-        private static string filePath = "E:\\GitHub\\AutoUITest\\Log\\log1.txt" ;
-
-        
+        private static string filePath = "E:\\Test\\FunAutoTester\\B2.1.aui" ;
 
         static void Main(string[] args)
         {
-            if (args.Length != 1)
+            if (args.Length == 0)
             {
                 Console.WriteLine("Please input arguments path");
             }
@@ -26,7 +24,7 @@ namespace AutoUIPlayback
                 string s = "";
                 while ((s = sr.ReadLine()) != null)
                 {
-                    //Thread.Sleep(200);
+                    Thread.Sleep(10);
                     if (!ana.StartAnalysis(s))
                     {
                         break;
@@ -34,7 +32,7 @@ namespace AutoUIPlayback
                     
                 }
             }
-
+            return;
            // Console.Read();
         }
     }
