@@ -1080,6 +1080,7 @@ namespace GlobalHooksTest
 			public event MouseEventHandler MouseDown;
 			public event MouseEventHandler MouseMove;
 			public event MouseEventHandler MouseUp;
+            public event MouseEventHandler MouseDoubleClick;
 
 			private const int WM_MOUSEMOVE                    = 0x0200;
 			private const int WM_LBUTTONDOWN                  = 0x0201;
@@ -1156,6 +1157,13 @@ namespace GlobalHooksTest
 						if (MouseUp != null)
                             MouseUp(this, new MouseEventArgs(MouseButtons.Right, m.HWnd.ToInt32(), M.pt.X, M.pt.Y, M.time));
 					}
+                    else if (m.WParam.ToInt32() == WM_LBUTTONDBLCLK)
+                    {
+                        if (MouseDoubleClick!=null)
+                        {
+                            MouseDoubleClick(this, new MouseEventArgs(MouseButtons.Left, m.HWnd.ToInt32(), M.pt.X, M.pt.Y, M.time));
+                        }
+                    }
 				}
 				else if (m.Msg == _MsgID_MouseLL_HookReplaced)
 				{

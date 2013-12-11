@@ -46,14 +46,17 @@ namespace GlobalHooksTest
         private Label label1;
         private Label label2;
         private TextBox textBox2;
-        
+
+        private bool mouseDownFlag = false;
+        private bool drawFlag = false;
+        //private bool moveFristFlag = true;
         private Thread workerThread;
         private Button button2;
 
-        private AutomationEventHandler UIAEventHandler;
+        //private AutomationEventHandler UIAEventHandler;
         //private AutomationFocusChangedEventHandler focusHandler = null;
         //private bool comboBoxFlag = true;
-        private bool stopFlag = true;
+        //private bool stopFlag = true;
 
 		public Form1()
 		{
@@ -76,6 +79,7 @@ namespace GlobalHooksTest
 			_GlobalHooks.MouseLL.MouseMove += new MouseEventHandler(MouseLL_MouseMove);
             _GlobalHooks.MouseLL.MouseDown += new MouseEventHandler(MouseLL_MouseDown);
             _GlobalHooks.MouseLL.MouseUp += new MouseEventHandler(MouseLL_MouseUp);
+            _GlobalHooks.MouseLL.MouseDoubleClick += new MouseEventHandler(MouseLL_MouseDClick);
             _GlobalHooks.KeyboardLL.KeyDown += new KeyEventHandler(KeyboardLL_KeyDown);
             _GlobalHooks.KeyboardLL.KeyUp += new KeyEventHandler(KeyboardLL_KeyUp);
             _GlobalHooks.CallWndProc.CallWndProc += new GlobalHooksTest.GlobalHooks.WndProcEventHandler(_GlobalHooks_CallWndProc);
@@ -107,17 +111,17 @@ namespace GlobalHooksTest
                 //_GlobalHooks.SysMsgFilter.Stop();
                 //_GlobalHooks.CallWndProc.Stop();
                 //_GlobalHooks.GetMsg.Stop();
-                if (stopFlag)
-                {
-                    StringBuilder builder = elemManage.AnalysisStr();
+                //if (stopFlag)
+                //{
+                //    StringBuilder builder = elemManage.AnalysisStr();
 
-                    using (StreamWriter sw = File.CreateText(textBox2.Text))
-                    {
+                //    using (StreamWriter sw = File.CreateText(textBox2.Text))
+                //    {
 
-                        sw.Write(builder.ToString());
+                //        sw.Write(builder.ToString());
 
-                    }
-                }
+                //    }
+                //}
 
                 if (components != null)
                 {
@@ -272,10 +276,9 @@ namespace GlobalHooksTest
 		{
             string time = elemManage.GetTime();
             _GlobalHooks.Shell.Start();
-            AddText("Start|\"" + strPath + "\"");
+            AddText("Start \"" + strPath + "\"");
             elemManage.StartProcess(strPath);
-            
-           
+
 			_GlobalHooks.CBT.Start();
             //AddText("CBT hook Adding");
             _GlobalHooks.MouseLL.Start();
@@ -322,15 +325,16 @@ namespace GlobalHooksTest
             //elemManage.UnsubscribeFocusChange();
             AddText("Stop");
 
-            stopFlag = false;
-            StringBuilder builder = elemManage.AnalysisStr();
+            //stopFlag = false;
+            //StringBuilder builder = elemManage.AnalysisStr();
+            elemManage.WriteToFile(textBox2.Text);
             
-            using (StreamWriter sw = File.CreateText(textBox2.Text))
-            {
-
-                sw.Write(builder.ToString());
-
-            }
+//             using (StreamWriter sw = File.CreateText(textBox2.Text))
+//             {
+// 
+//                 sw.Write(builder.ToString());
+// 
+//             }
 		}
 
 		private void BtnInitShell_Click(object sender, System.EventArgs e)
@@ -355,16 +359,16 @@ namespace GlobalHooksTest
 		private void _GlobalHooks_CbtActivate(IntPtr Handle)
 		{
 			//this.ListCbt.Items.Add("Activate: " + GetWindowName(Handle));
-            string time = elemManage.GetTime();
+            //string time = elemManage.GetTime();
             //string name = elemManage.GetElementInfo(elemManage.GetElementFromHandle(Handle));
             if (elemManage.hasWindowsProcess(Handle))
             {
-                string name = elemManage.AddMainElementFromHandle(Handle);
-                if (name == null || name == "\"" || name == " "||name=="")
-                {
-                    return;
-                }
-                //elemManage.ActivateWnd(Handle);
+//                 string name = elemManage.AddMainElementFromHandle(Handle);
+//                 if (name == null || name == "\"" || name == " " || name == "")
+//                 {
+//                     return;
+//                 }
+                elemManage.ActivateWnd(Handle);
                 if (elemManage.addHandler(Handle))
                 {
                     ThreadStart threadDelegate = new ThreadStart(StartUiaWorkerThread);
@@ -372,7 +376,7 @@ namespace GlobalHooksTest
                     workerThread.Start();
                     //AddText("Thread Start");
                 }
-                AddText("Activate|" + name);
+                //AddText("Activate|" + name);
             }
             
             //AddText("Activate: " + GetWindowName(Handle));
@@ -398,16 +402,16 @@ namespace GlobalHooksTest
 
 		private void _GlobalHooks_CbtDestroyWindow(IntPtr Handle)
 		{
-            string time = elemManage.GetTime();
-            if (elemManage.hasWindowsProcess(Handle))
-            {
-                string name = elemManage.GetNameFromHandle(Handle);
-                if (name == null || name == "\"" || name == " " || name == "")
-                {
-                    return;
-                }
-                AddText("Destroy|" + name);
-            }
+//             string time = elemManage.GetTime();
+//             if (elemManage.hasWindowsProcess(Handle))
+//             {
+//                 string name = elemManage.GetNameFromHandle(Handle);
+//                 if (name == null || name == "\"" || name == " " || name == "")
+//                 {
+//                     return;
+//                 }
+//                 AddText("Destroy|" + name);
+//             }
 		//	this.ListCbt.Items.Add("Destroy: " + GetWindowName(Handle));
 		}
 
@@ -464,7 +468,7 @@ namespace GlobalHooksTest
                 //    workerThread.Start();
                 //    //AddText("ThreadStart:");
                 //}
-                AddText("WindowCreate|" + name);
+                AddText("WindowCreate " + name);
             }
             //if (elemManage.hasWindowsProcess(Handle))
             //{
@@ -487,6 +491,19 @@ namespace GlobalHooksTest
 
 		private void MouseLL_MouseMove(object sender, MouseEventArgs e)
 		{
+            if (mouseDownFlag)
+            {
+                mouseDownFlag = false;
+                //string action = "MouseMove";
+                //elemManage.GetMouseAction(action, e);
+                elemManage.MouseMoveAction(e.X,e.Y);
+            }
+
+            if (drawFlag)
+            {
+                elemManage.DrawElement(e.X, e.Y);
+            }
+            #region MyRegion
             //if (elemManage.IsEnablePoint(e.X,e.Y))
             //{
             //    string message = elemManage.GetMenuElementByPoint(e.X, e.Y);
@@ -508,38 +525,65 @@ namespace GlobalHooksTest
             ////this.ListCbt.Items.Add("MouseDown:"+ message + e.X + "," + e.Y);
             //string msg = string.Format("{0}MouseDown|{1}|{2}", e.Button.ToString(), message, e.Delta);
             //AddText(msg);
-			//this.LblMouse.Text = "Mouse at: " + e.X + ", " + e.Y;
+            //this.LblMouse.Text = "Mouse at: " + e.X + ", " + e.Y; 
+            #endregion
 		}
 
         private void MouseLL_MouseDown(object sender, MouseEventArgs e)
         {
-            string message = elemManage.GetElementFromPoint(new Point(e.X, e.Y));
-            if (message == null||message == "")
+            mouseDownFlag = true;
+            //string action = e.Button.ToString() + "MouseDown";
+            //elemManage.GetMouseAction(action, e);
+            if ("Left"==e.Button.ToString())
             {
-                return;
+                elemManage.LeftMouseDownAction(e.X, e.Y);
             }
-            string hwnd = elemManage.GetNameFromHandle((IntPtr)e.Clicks);
-            // string msg = string.Format("Mouse event: {0}-->{1}: ({2},{3}).,{4}", mEvent.ToString(), name, point.X, point.Y, hwnd)
-            //this.ListCbt.Items.Add("MouseDown:"+ message + e.X + "," + e.Y);
-            string msg = string.Format("{0}MouseDown|{1}|{2}", e.Button.ToString(), message, e.Delta);
-            AddText(msg);
-            
+            else if ("Right" == e.Button.ToString())
+            {
+                elemManage.RightMouseDownAction(e.X, e.Y);
+            }
+//             string message = elemManage.GetElementFromPoint(new Point(e.X, e.Y));
+//             if (message == null||message == "")
+//             {
+//                 return;
+//             }
+//             string hwnd = elemManage.GetNameFromHandle((IntPtr)e.Clicks);
+//             // string msg = string.Format("Mouse event: {0}-->{1}: ({2},{3}).,{4}", mEvent.ToString(), name, point.X, point.Y, hwnd)
+//             //this.ListCbt.Items.Add("MouseDown:"+ message + e.X + "," + e.Y);
+//             string msg = string.Format("{0}MouseDown|{1}|{2}", e.Button.ToString(), message, e.Delta);
+//             AddText(msg);
         }
 
         private void MouseLL_MouseUp(object sender, MouseEventArgs e)
         {
-    
-            string message = elemManage.GetElementFromPoint(new Point(e.X, e.Y));
-            if (message == null||message=="")
+            mouseDownFlag = false;
+            //moveFristFlag = true;
+            //string action = e.Button.ToString() + "MouseUp";
+            //elemManage.GetMouseAction(action, e);
+            if ("Left" == e.Button.ToString())
             {
-                return;
+                elemManage.LeftMouseUpAction(e.X, e.Y);
             }
-            string hwnd = elemManage.GetNameFromHandle((IntPtr)e.Clicks);
-            // string msg = string.Format("Mouse event: {0}-->{1}: ({2},{3}).,{4}", mEvent.ToString(), name, point.X, point.Y, hwnd)
-            //this.ListCbt.Items.Add("MouseDown:"+ message + e.X + "," + e.Y);
-            string msg = string.Format("{0}MouseUp|{1}|{2}", e.Button.ToString(), message,e.Delta);
-            AddText(msg);
+            else if ("Right" == e.Button.ToString())
+            {
+                elemManage.RightMouseUpAction(e.X, e.Y);
+            }
+//             string message = elemManage.GetElementFromPoint(new Point(e.X, e.Y));
+//             if (message == null||message=="")
+//             {
+//                 return;
+//             }
+//             string hwnd = elemManage.GetNameFromHandle((IntPtr)e.Clicks);
+//             // string msg = string.Format("Mouse event: {0}-->{1}: ({2},{3}).,{4}", mEvent.ToString(), name, point.X, point.Y, hwnd)
+//             //this.ListCbt.Items.Add("MouseDown:"+ message + e.X + "," + e.Y);
+//             string msg = string.Format("{0}MouseUp|{1}|{2}", e.Button.ToString(), message,e.Delta);
+//             AddText(msg);
          
+        }
+
+        private void MouseLL_MouseDClick(object sender, MouseEventArgs e)
+        {
+            AddText("Double Click");
         }
 
         private void KeyboardLL_KeyDown(object sender, KeyEventArgs e)
@@ -548,20 +592,27 @@ namespace GlobalHooksTest
             if (elemManage.isTopWindow())
             {
                 Keys key = e.KeyData;
-                if (key == Keys.F1)
+//                 if (key == Keys.F1)
+//                 {
+//                     ThreadStart threadDelegate = new ThreadStart(SetWaitListener);
+//                     workerThread = new Thread(threadDelegate);
+//                     workerThread.Start();
+//                 }
+//                 else if (key == Keys.F2)
+//                 {
+//                     //setValueFlag = true;
+//                 }
+                if (key == Keys.F1||key == Keys.F2)
                 {
-                    ThreadStart threadDelegate = new ThreadStart(SetListener);
-                    workerThread = new Thread(threadDelegate);
-                    workerThread.Start();
+                    drawFlag = true;
                 }
                 else
                 {
-                    string msg = string.Format("KeyDown|{0}", e.KeyData);
-                    AddText(msg);
+                    elemManage.KeyDownAction(e.KeyData);
+
                 }
 
-//                 string msg = string.Format("KeyDown|{0}", e.KeyData);
-//                 AddText(msg);
+
             }
             
         }
@@ -572,13 +623,21 @@ namespace GlobalHooksTest
             if (elemManage.isTopWindow())
             {
                 Keys key = e.KeyData;
-                if (key != Keys.F1)
+                if (key == Keys.F1)
                 {
-                    string msg = string.Format("KeyUp|{0}", e.KeyData);
-                    AddText(msg);
+                    drawFlag = false;
+                    elemManage.SetWaitListener();
                 }
-//                 string msg = string.Format("KeyUp|{0}", e.KeyData);
-//                 AddText(msg);
+                else if (key == Keys.F2)
+                {
+                    drawFlag = false;
+                    elemManage.SetValueListener();
+                }
+                else
+                {
+                    elemManage.KeyUpAction(e.KeyData);
+                }
+
             }
         }
 
@@ -884,9 +943,14 @@ namespace GlobalHooksTest
             AddText(message);
         }
 
-        private void SetListener()
+        private void SetWaitListener()
         {
-            elemManage.SetListener();
+            elemManage.SetWaitListener();
+        }
+
+        private void SetValueListener()
+        {
+            elemManage.SetValueListener();
         }
 	
     }

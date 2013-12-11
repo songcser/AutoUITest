@@ -75,6 +75,8 @@ namespace AutoUIPlayback
         );
         [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")]
         public static extern uint GetWindowThreadProcessId(IntPtr hWnd, ref int lpdwProcessId);
+        [DllImport("user32.dll", EntryPoint = "GetDoubleClickTime")]
+        public static extern int GetDoubleClickTime();
 
         const int MOUSEEVENTF_MOVE = 0x0001;
 
@@ -115,6 +117,7 @@ namespace AutoUIPlayback
         List<AutomationElementCollection> collectionList;
 
         private static bool SyncFlag = true;
+        private int dcTime = 0;
         //public AutomationElement MainWindow
         //{
         //    get { return mainWindow; }
@@ -139,6 +142,15 @@ namespace AutoUIPlayback
 //             cacheRequest.Add(TogglePattern.Pattern);
 
             collectionList = new List<AutomationElementCollection>();
+            if (dcTime>200)
+            {
+                dcTime = GetDoubleClickTime() - 200;
+            }
+            else
+            {
+                dcTime = GetDoubleClickTime();
+            }
+            
         }
 
         public bool StartAnalysis(string s)
@@ -166,52 +178,58 @@ namespace AutoUIPlayback
             else if ("Click " == strList[0])
             {
                 //Thread.Sleep(500);
-                if (strList.Count==5)
+                #region MyRegion
+                if (strList.Count == 7)
                 {
-                    ClickLeftMouse(strList[1], strList[2],strList[3]);
+                    ClickLeftMouse(strList[1], strList[2], strList[3], Int32.Parse(strList[4]), Int32.Parse(strList[5]));
                 }
-                else if (strList.Count == 6)
+                else if (strList.Count == 8)
                 {
-                    ClickLeftMouse(strList[1],strList[2],strList[3],strList[4]);
+                    ClickLeftMouse(strList[1], strList[2], strList[3], strList[4], Int32.Parse(strList[5]), Int32.Parse(strList[6]));
                 }
                 else
                 {
                     return false;
-                }
+                } 
+                #endregion
                 
             }
             else if ("RightClick " == strList[0])
             {
                 //Thread.Sleep(500);
-                if (strList.Count == 5)
+                #region MyRegion
+                if (strList.Count == 7)
                 {
-                    ClickRightMouse(strList[1], strList[2], strList[3]);
+                    ClickRightMouse(strList[1], strList[2], strList[3], Int32.Parse(strList[4]), Int32.Parse(strList[5]));
                 }
-                else if (strList.Count == 6)
+                else if (strList.Count == 8)
                 {
-                    ClickRightMouse(strList[1], strList[2], strList[3], strList[4]);
+                    ClickRightMouse(strList[1], strList[2], strList[3], strList[4], Int32.Parse(strList[5]), Int32.Parse(strList[6]));
                 }
                 else
                 {
                     return false;
-                }
+                } 
+                #endregion
             }
             else if ("DoubleClick " == strList[0])
             {
                 //Thread.Sleep(500);
-                if (strList.Count == 5)
+                #region MyRegion
+                if (strList.Count == 7)
                 {
-                    DoubleMouseDown(strList[1], strList[2], strList[3]);
+                    DoubleMouseDown(strList[1], strList[2], strList[3], Int32.Parse(strList[4]), Int32.Parse(strList[5]));
                 }
-                else if (strList.Count == 6)
+                else if (strList.Count == 8)
                 {
-                    DoubleMouseDown(strList[1], strList[2], strList[3], strList[4]);
+                    DoubleMouseDown(strList[1], strList[2], strList[3], strList[4], Int32.Parse(strList[5]), Int32.Parse(strList[6]));
                 }
                 else
                 {
                     return false;
                 }
                 
+                #endregion
             }
             else if ("Stop" == strList[0])
             {
@@ -220,7 +238,14 @@ namespace AutoUIPlayback
             }
             else if ("SetFocus "==strList[0])
             {
-                SetFocus(strList[1], strList[2],strList[3]);
+                if (strList.Count == 7)
+                {
+                    SetFocus(strList[1], strList[2], strList[3]);
+                }
+                else if (strList.Count == 8)
+                {
+                    SetFocus(strList[1], strList[2], strList[3],strList[4]);
+                }
             }
             else if ("SendKey " == strList[0])
             {
@@ -239,18 +264,11 @@ namespace AutoUIPlayback
             }
             else if ("OpenMenu " == strList[0])
             {
-                if (strList.Count == 5)
-                {
-                    ClickLeftMouse(strList[1], strList[2], strList[3]);
-                }
-                else if (strList.Count == 6)
-                {
-                    ClickLeftMouse(strList[1], strList[2], strList[3], strList[4]);
-                }
-                else
-                {
-                    return false;
-                }
+                #region MyRegion
+                
+                ClickLeftMouse(strList[1], strList[2], strList[3], 0, 0);
+               
+                #endregion
                 //ClickLeftMouse(strList[1], strList[2], strList[3]);
             }
             else if ("WindowCreate " == strList[0])
@@ -259,7 +277,7 @@ namespace AutoUIPlayback
             }
             else if ("Activate " == strList[0])
             {
-                if (strList.Count == 6)
+                if (strList.Count == 7)
                 {
                     ActivateWindow(strList[1], strList[2], strList[3], strList[4]);
                 }
@@ -271,45 +289,51 @@ namespace AutoUIPlayback
             }
             else if ("LeftMouseDown " == strList[0])
             {
+                #region MyRegion
                 isClear = true;
-                if (strList.Count == 5)
+                if (strList.Count == 7)
                 {
-                    ClickLeftMouse(strList[1], strList[2], strList[3]);
+                    ClickLeftMouse(strList[1], strList[2], strList[3], Int32.Parse(strList[4]), Int32.Parse(strList[5]));
                 }
-                else if (strList.Count == 6)
+                else if (strList.Count == 8)
                 {
-                    ClickLeftMouse(strList[1], strList[2], strList[3], strList[4]);
+                    ClickLeftMouse(strList[1], strList[2], strList[3], strList[4], Int32.Parse(strList[5]), Int32.Parse(strList[6]));
+                }
+                else
+                {
+                    return false;
+                } 
+                #endregion
+            }
+            else if ("LeftMouseUp" == strList[0])
+            {
+                isClear = false;
+
+            }
+            else if ("Wait " == strList[0])
+            {
+                if (strList.Count == 8)
+                {
+                    WaitControl(strList[1], strList[2], strList[3],strList[6]);
+                }
+                else if (strList.Count == 9)
+                {
+                    WaitControl(strList[1], strList[2], strList[3], strList[4],strList[7]);
                 }
                 else
                 {
                     return false;
                 }
             }
-            else if ("LeftMouseUp" == strList[0])
+            else if ("Move " == strList[0])
             {
-                isClear = false;
-//                 if (strList.Count == 5)
-//                 {
-//                     LeftMouseUp(strList[1], strList[2], strList[3]);
-//                 }
-//                 else if (strList.Count == 6)
-//                 {
-//                     LeftMouseUp(strList[1], strList[2], strList[3], strList[4]);
-//                 }
-//                 else
-//                 {
-//                     return false;
-//                 }
-            }
-            else if ("Wait " == strList[0])
-            {
-                if (strList.Count == 6)
+                if (strList.Count == 8)
                 {
-                    WaitControl(strList[1], strList[2], strList[3],strList[4]);
+                    Move(strList[1], strList[2], strList[3], Int32.Parse(strList[4]), Int32.Parse(strList[5]), Int32.Parse(strList[6]), Int32.Parse(strList[7]));
                 }
-                else if (strList.Count == 7)
+                else if (strList.Count == 9)
                 {
-                    WaitControl(strList[1], strList[2], strList[3], strList[4],strList[5]);
+                    Move(strList[1], strList[2], strList[3], strList[4], Int32.Parse(strList[5]),Int32.Parse(strList[6]),Int32.Parse(strList[7]),Int32.Parse(strList[8]));
                 }
                 else
                 {
@@ -568,7 +592,7 @@ namespace AutoUIPlayback
             }
         }
 
-        private void LeftMouseDown(string name, string type, string autoId)
+        private void LeftMouseDown(string name, string type, string autoId,int offsetX,int offsetY)
         {
             AutomationElement element = FindElement(name, type, autoId);
             if (element == null)
@@ -587,46 +611,61 @@ namespace AutoUIPlayback
                     //currentPattern.SetValue("");
                 }
             }
-            Point p = element.GetClickablePoint();
-            SetCursorPos((int)p.X, (int)p.Y);
+            Rect rect = element.Current.BoundingRectangle;
 
-            mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+            int IncrementX = (int)(rect.Left + offsetX);
+
+            int IncrementY = (int)(rect.Top + offsetY);
+            if (offsetX == 0 && offsetY == 0)
+            {
+                Point p = element.GetClickablePoint();
+                IncrementX = (int)p.X;
+                IncrementY = (int)p.Y;
+            }
+            //Point p = element.GetClickablePoint();
+            //Point p = new Point(IncrementX, IncrementY);
+            SetCursorPos(IncrementX, IncrementY);
+
+            mouse_event(MOUSEEVENTF_LEFTDOWN, IncrementX, IncrementX, 0, UIntPtr.Zero);
 
             //mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
             
         }
-        
-        private void LeftMouseDown(string name, string type, string pname,string ptype)
+
+        private void LeftMouseDown(string name, string type, string pname, string ptype, int offsetX, int offsetY)
         {
-            if (name == "Scaling Function")
-            {
-            }
             AutomationElement element = FindElement(name, type, pname,ptype);
             if (element == null)
             {
-                return;
                 throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
 
                     element.Current.AutomationId, element.Current.Name));
             }
-            if (type == "edit")
-            {
-                if (isClear)
-                {
-                    ValuePattern currentPattern = GetValuePattern(element);
-                    currentPattern.SetValue("");
-                }
-            }
-            Point p = element.GetClickablePoint();
-            SetCursorPos((int)p.X, (int)p.Y);
+            
+            Rect rect = element.Current.BoundingRectangle;
 
-            mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+            int IncrementX = (int)(rect.Left + offsetX);
+
+            int IncrementY = (int)(rect.Top + offsetY);
+            if (offsetX == 0 && offsetY == 0)
+            {
+                Point p = element.GetClickablePoint();
+                IncrementX = (int)p.X;
+                IncrementY = (int)p.Y;
+            }
+            //Point p = element.GetClickablePoint();
+            //Point p = new Point(IncrementX, IncrementY);
+            SetCursorPos(IncrementX, IncrementY);
+
+            mouse_event(MOUSEEVENTF_LEFTDOWN, IncrementX, IncrementX, 0, UIntPtr.Zero);
+
+            //mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
 
             //mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
 
         }
-        
-        private void LeftMouseUp(string name, string type, string autoId)
+
+        private void LeftMouseUp(string name, string type, string autoId, int offsetX, int offsetY)
         {
             AutomationElement element = FindElement(name, type, autoId);
             if (element == null)
@@ -636,16 +675,26 @@ namespace AutoUIPlayback
 
                     element.Current.AutomationId, element.Current.Name));
             }
-            Point p = element.GetClickablePoint();
-            SetCursorPos((int)p.X, (int)p.Y);
+            System.Windows.Rect rect = element.Current.BoundingRectangle;
+            int x = (int)rect.X + offsetX;
+            int y = (int)rect.Y + offsetY;
+            if (offsetX == 0 && offsetY == 0)
+            {
+                Point point = element.GetClickablePoint();
+                x = (int)point.X;
+                y = (int)point.Y;
+            }
+            SetCursorPos(x, y);
+
+            mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
 
             //mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
 
-            mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+           // mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
 
         }
 
-        private void LeftMouseUp(string name, string type, string pname,string ptype)
+        private void LeftMouseUp(string name, string type, string pname, string ptype, int offsetX, int offsetY)
         {
             AutomationElement element = FindElement(name, type, pname, ptype);
             if (element == null)
@@ -655,52 +704,60 @@ namespace AutoUIPlayback
 
                     element.Current.AutomationId, element.Current.Name));
             }
-            Point p = element.GetClickablePoint();
-            SetCursorPos((int)p.X, (int)p.Y);
+            Rect rect = element.Current.BoundingRectangle;
+
+            int IncrementX = (int)(rect.Left + offsetX);
+
+            int IncrementY = (int)(rect.Top + offsetY);
+            if (offsetX == 0 && offsetY == 0)
+            {
+                Point p = element.GetClickablePoint();
+                IncrementX = (int)p.X;
+                IncrementY = (int)p.Y;
+            }
+            //Point p = element.GetClickablePoint();
+            //Point p = new Point(IncrementX, IncrementY);
+            SetCursorPos(IncrementX, IncrementY);
 
             //mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
 
-            mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+            mouse_event(MOUSEEVENTF_LEFTUP, IncrementX, IncrementY, 0, UIntPtr.Zero);
 
         }
 
-        public void ClickLeftMouse(string name, string type,string autoId)
+        public void ClickLeftMouse(string name, string type, string autoId, int offsetX, int offsetY)
         {
             AutomationElement element = FindElement(name, type,autoId);
             
             if (element == null)
             {
-                return;
-                
+                return; 
             }
             
             try
             {
-                AnalysisType(element);
-                
+                AnalysisType(element,offsetX,offsetY);
             }
             catch (System.Exception ex)
             {
-
                 string str = ex.Message;
                 AutomationElement elem = FindCurrentElement(name, type, autoId,true);
-                if (element != null)
+                if (elem != null)
                 {
-                    if (type == "menu item")
+                    System.Windows.Rect rect = elem.Current.BoundingRectangle;
+                    int x = (int)rect.X + offsetX;
+                    int y = (int)rect.Y + offsetY;
+                    if (offsetX==0&&offsetY==0)
                     {
-                        Point p = elem.GetClickablePoint();
-                        SetCursorPos((int)p.X, (int)p.Y);
-
-                        mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
-
-                        mouse_event(MOUSEEVENTF_LEFTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
-                        
+                        Point point = elem.GetClickablePoint();
+                        x = (int)point.X;
+                        y = (int)point.Y;
                     }
-                    else
-                    {
-                        AnalysisType(elem);
-                    }
-                    
+                    SetCursorPos(x, y);
+
+                    mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
+                    //Thread.Sleep(50);
+                    mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
                 }
             }
 
@@ -744,7 +801,7 @@ namespace AutoUIPlayback
 
         }
 
-        public void ClickLeftMouse(string name, string type, string pname, string ptype)
+        public void ClickLeftMouse(string name, string type, string pname, string ptype, int offsetX, int offsetY)
         {
             AutomationElement element = FindElement(name, type, pname,ptype);
             
@@ -755,7 +812,7 @@ namespace AutoUIPlayback
             
             try
             {
-                AnalysisType(element);
+                AnalysisType(element,offsetX,offsetY);
                 
             }
             catch (System.Exception ex)
@@ -763,21 +820,28 @@ namespace AutoUIPlayback
                 string str = ex.Message;
                 
                 AutomationElement elem = FindCurrentElement(name, type, pname,ptype);
-                //Point p = element.GetClickablePoint();
-                //SetCursorPos((int)p.X, (int)p.Y);
-
-                //mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
-
-                //mouse_event(MOUSEEVENTF_LEFTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
-                //Thread.Sleep(1000);
                 if (elem != null)
                 {
-                    AnalysisType(elem);
+
+                    System.Windows.Rect rect = elem.Current.BoundingRectangle;
+                    int x = (int)rect.X + offsetX;
+                    int y = (int)rect.Y + offsetY;
+                    if (offsetX == 0 && offsetY == 0)
+                    {
+                        Point point = elem.GetClickablePoint();
+                        x = (int)point.X;
+                        y = (int)point.Y;
+                    }
+                    SetCursorPos(x, y);
+
+                    mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
+
+                    mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
                 }
             }
         }
 
-        public void ClickRightMouse(string name,string type,string autoId)
+        public void ClickRightMouse(string name, string type, string autoId, int offsetX, int offsetY)
         {
 
             AutomationElement element = FindElement( name, type,autoId);
@@ -790,28 +854,41 @@ namespace AutoUIPlayback
                     element.Current.AutomationId, element.Current.Name));
 
             }
+            Rect rect = element.Current.BoundingRectangle;
 
+            int IncrementX = (int)(rect.Left + offsetX);
+
+            int IncrementY = (int)(rect.Top + offsetY);
+            if (offsetX==0&&offsetY==0)
+            {
+                Point p = element.GetClickablePoint();
+                IncrementX = (int)p.X;
+                IncrementY = (int)p.Y;
+            }
+            
+            SetCursorPos(IncrementX, IncrementY);
+
+            #region MyRegion
             //Rect rect = element.Current.BoundingRectangle;
 
             //int IncrementX = (int)(rect.Left + rect.Width / 2);
- 
+
             //int IncrementY = (int)(rect.Top + rect.Height / 2);
 
             //element.SetFocus();
             //Win32Api api = new Win32Api();
             //Win32Api.MouseRightKeyDown(IncrementX, IncrementY);
             //Win32Api.MouseRightKeyUp(IncrementX, IncrementY);
-            Point p = element.GetClickablePoint();
 
             //POINTAPI point = new POINTAPI();
             //point.x = (uint)p.X;
             //point.y = (uint)p.Y;
             //ScreenToClient(mainHandle, ref point);
             //IntPtr handle = ChildWindowFromPoint(mainHandle, point);
-//             //handle = (IntPtr)element.Current.NativeWindowHandle;
-//             AutomationElement elem = AutomationElement.FromHandle(handle);
-//            //Make the cursor position to the element.
-            SetCursorPos((int)p.X, (int)p.Y);
+            //             //handle = (IntPtr)element.Current.NativeWindowHandle;
+            //             AutomationElement elem = AutomationElement.FromHandle(handle);
+            //            //Make the cursor position to the element.
+
             //var value = ((int)p.X) << 16 + (int)p.Y;
             //SendMessage(mainHandle, WM_RBUTTONDOWN, 0, value);
             //SendMessage(mainHandle, WM_RBUTTONUP, 0, value);
@@ -824,22 +901,23 @@ namespace AutoUIPlayback
             //var handle = window.Current.NativeWindowHandle;
             //SetCursorPos((int)p.X,(int)p.Y);
             //SetCursorPos(IncrementX, IncrementY);
-////             SendMessage(mainHandle, MOUSEEVENTF_RIGHTDOWN, IntPtr.Zero, (IntPtr)(IncrementY * 65536 + IncrementX));
-////             SendMessage(mainHandle, MOUSEEVENTF_RIGHTUP, IntPtr.Zero, (IntPtr)(IncrementY * 65536 + IncrementX));
+            ////             SendMessage(mainHandle, MOUSEEVENTF_RIGHTDOWN, IntPtr.Zero, (IntPtr)(IncrementY * 65536 + IncrementX));
+            ////             SendMessage(mainHandle, MOUSEEVENTF_RIGHTUP, IntPtr.Zero, (IntPtr)(IncrementY * 65536 + IncrementX));
             //SendMessage(mainHandle, WM_RBUTTONDOWN, IntPtr.Zero, (IntPtr)(value));
             //SendMessage(mainHandle, WM_RBUTTONUP, IntPtr.Zero, (IntPtr)(value));
 
-//             SendMessage(handle, WM_RBUTTONDOWN, (IntPtr)IncrementX, (IntPtr)IncrementY);
-//             SendMessage(handle, WM_RBUTTONUP, (IntPtr)IncrementX, (IntPtr)IncrementY);
-            //Make the left mouse down and up.
+            //             SendMessage(handle, WM_RBUTTONDOWN, (IntPtr)IncrementX, (IntPtr)IncrementY);
+            //             SendMessage(handle, WM_RBUTTONUP, (IntPtr)IncrementX, (IntPtr)IncrementY);
+            //Make the left mouse down and up. 
+            #endregion
 
-             mouse_event(MOUSEEVENTF_RIGHTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
- 
-             mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+            mouse_event(MOUSEEVENTF_RIGHTDOWN, IncrementX, IncrementY, 0, UIntPtr.Zero);
+
+            mouse_event(MOUSEEVENTF_RIGHTUP, IncrementX, IncrementY, 0, UIntPtr.Zero);
 
         }
 
-        public void ClickRightMouse(string name, string type, string pname, string ptype)
+        public void ClickRightMouse(string name, string type, string pname, string ptype, int offsetX, int offsetY)
         {
             //ClickRightMouse(name, type, "");
             AutomationElement element = FindElement(name, type, pname, ptype);
@@ -854,23 +932,24 @@ namespace AutoUIPlayback
 
             Rect rect = element.Current.BoundingRectangle;
 
-            int IncrementX = (int)(rect.Left + rect.Width / 2);
+            int IncrementX = (int)(rect.Left + offsetX);
 
-            int IncrementY = (int)(rect.Top + rect.Height / 2);
-            //Point p = element.GetClickablePoint();
-            Point p = new Point(IncrementX, IncrementY);
-            SetCursorPos((int)p.X, (int)p.Y);
+            int IncrementY = (int)(rect.Top + offsetY);
+            if (offsetX == 0 && offsetY == 0)
+            {
+                Point p = element.GetClickablePoint();
+                IncrementX = (int)p.X;
+                IncrementY = (int)p.Y;
+            }
+            
+            SetCursorPos(IncrementX, IncrementY);
 
-//             var value = ((int)p.X) << 16 + (int)p.Y;
-//             SendMessage(mainHandle, WM_RBUTTONDOWN, 0, value);
-//             SendMessage(mainHandle, WM_RBUTTONUP, 0, value);
+            mouse_event(MOUSEEVENTF_RIGHTDOWN, IncrementX, IncrementY, 0, UIntPtr.Zero);
 
-            mouse_event(MOUSEEVENTF_RIGHTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
- 
-            mouse_event(MOUSEEVENTF_RIGHTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+            mouse_event(MOUSEEVENTF_RIGHTUP, IncrementX, IncrementY, 0, UIntPtr.Zero);
         }
 
-        public void DoubleMouseDown(string name, string type,string autoId)
+        public void DoubleMouseDown(string name, string type, string autoId, int offsetX, int offsetY)
         {
             AutomationElement element = FindElement( name, type,autoId);
 
@@ -907,14 +986,20 @@ namespace AutoUIPlayback
 
             Rect rect = element.Current.BoundingRectangle;
 
-            int IncrementX = (int)(rect.Left + rect.Width / 2);
+            //int IncrementX = (int)(rect.Left + rect.Width / 2);
 
-            int IncrementY = (int)(rect.Top + rect.Height / 2);
+            //int IncrementY = (int)(rect.Top + rect.Height / 2);
 
             //Make the cursor position to the element.
-            Point p = element.GetClickablePoint();
-            IncrementX = (int)p.X;
-            IncrementY = (int)p.Y;
+            //Point p = element.GetClickablePoint();
+            int IncrementX = (int)rect.X+offsetX;
+            int IncrementY = (int)rect.Y+offsetY;
+            if (offsetX == 0 && offsetY == 0)
+            {
+                Point p = element.GetClickablePoint();
+                IncrementX = (int)p.X;
+                IncrementY = (int)p.Y;
+            }
             SetCursorPos(IncrementX, IncrementY);
 
             //Make the left mouse down and up.
@@ -922,13 +1007,13 @@ namespace AutoUIPlayback
             mouse_event(MOUSEEVENTF_LEFTDOWN, IncrementX, IncrementY, 0, UIntPtr.Zero);
 
             mouse_event(MOUSEEVENTF_LEFTUP, IncrementX, IncrementY, 0, UIntPtr.Zero);
-            Thread.Sleep(50);
+            Thread.Sleep(dcTime);
             mouse_event(MOUSEEVENTF_LEFTDOWN, IncrementX, IncrementY, 0, UIntPtr.Zero);
 
             mouse_event(MOUSEEVENTF_LEFTUP, IncrementX, IncrementY, 0, UIntPtr.Zero);
         }
 
-        public void DoubleMouseDown(string name, string type, string pname, string ptype)
+        public void DoubleMouseDown(string name, string type, string pname, string ptype, int offsetX, int offsetY)
         {
             AutomationElement element = FindElement(name, type, pname, ptype);
 
@@ -941,15 +1026,22 @@ namespace AutoUIPlayback
             }
             Rect rect = element.Current.BoundingRectangle;
 
-            int IncrementX = (int)(rect.Left + rect.Width / 2);
+            //int IncrementX = (int)(rect.Left + rect.Width / 2);
 
-            int IncrementY = (int)(rect.Top + rect.Height / 2);
+            //int IncrementY = (int)(rect.Top + rect.Height / 2);
 
             //Make the cursor position to the element.
-            Point p = element.GetClickablePoint();
-            IncrementX = (int)p.X;
-            IncrementY = (int)p.Y;
+            //Point p = element.GetClickablePoint();
+            int IncrementX = (int)rect.X + offsetX;
+            int IncrementY = (int)rect.Y + offsetY;
+            if (offsetX == 0 && offsetY == 0)
+            {
+                Point p = element.GetClickablePoint();
+                IncrementX = (int)p.X;
+                IncrementY = (int)p.Y;
+            }
             SetCursorPos(IncrementX, IncrementY);
+            
             //SetCursorPos((int)p.X, ()p.Y);
             //Make the left mouse down and up.
 
@@ -957,13 +1049,45 @@ namespace AutoUIPlayback
             mouse_event(MOUSEEVENTF_LEFTDOWN, IncrementX, IncrementY, 0, UIntPtr.Zero);
 
             mouse_event(MOUSEEVENTF_LEFTUP, IncrementX, IncrementY, 0, UIntPtr.Zero);
-            Thread.Sleep(50);
+            Thread.Sleep(dcTime);
             mouse_event(MOUSEEVENTF_LEFTDOWN, IncrementX, IncrementY, 0, UIntPtr.Zero);
 
             mouse_event(MOUSEEVENTF_LEFTUP, IncrementX, IncrementY, 0, UIntPtr.Zero);
         }
 
-        public void AnalysisType(AutomationElement element)
+        public void Move(string name, string type, string autoId, int offsetX, int offsetY, int moveX, int moveY)
+        {
+            AutomationElement element = FindElement(name, type, autoId);
+            if (element == null)
+            {
+                return;
+            }
+            Rect rect = element.Current.BoundingRectangle;
+            int IncrementX = (int)rect.X + offsetX;
+            int IncrementY = (int)rect.Y + offsetY;
+            SetCursorPos(IncrementX, IncrementY);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, IncrementX, IncrementY, 0, UIntPtr.Zero);
+            SetCursorPos(IncrementX + moveX, IncrementY + moveY);
+            mouse_event(MOUSEEVENTF_LEFTUP, IncrementX, IncrementY, 0, UIntPtr.Zero);
+        }
+
+        public void Move(string name, string type, string pname,string ptype, int offsetX, int offsetY, int moveX, int moveY)
+        {
+            AutomationElement element = FindElement(name, type, pname,ptype);
+            if (element == null)
+            {
+                return;
+            }
+            Rect rect = element.Current.BoundingRectangle;
+            int IncrementX = (int)rect.X + offsetX;
+            int IncrementY = (int)rect.Y + offsetY;
+            SetCursorPos(IncrementX, IncrementY);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, IncrementX, IncrementY, 0, UIntPtr.Zero);
+            SetCursorPos(IncrementX + moveX, IncrementY + moveY);
+            mouse_event(MOUSEEVENTF_LEFTUP, IncrementX, IncrementY, 0, UIntPtr.Zero);
+        }
+
+        public void AnalysisType(AutomationElement element,int offsetX,int offsetY)
         {
             ControlType type = element.Current.ControlType;
             
@@ -989,24 +1113,9 @@ namespace AutoUIPlayback
             }
             else if (type == ControlType.MenuItem)
             {
-                try
-                {
-                    ExpandCollapsePattern pattern = element.GetCurrentPattern(ExpandCollapsePattern.Pattern) as ExpandCollapsePattern;
-                    pattern.Expand();
-//                     ExpandCollapsePattern currentPattern = GetExpandCollapsePattern(element);
-//                     if (currentPattern == null)
-//                     {
-//                         return;
-//                     }
-//                     currentPattern.Expand();
-                }
-                catch (System.Exception ex)
-                {
-                    InvokePattern invokePattern = element.GetCurrentPattern(InvokePattern.Pattern) as InvokePattern;
-                    invokePattern.Invoke();
-                }
-                
-                
+                ExpandCollapsePattern pattern = element.GetCurrentPattern(ExpandCollapsePattern.Pattern) as ExpandCollapsePattern;
+                pattern.Expand();
+
             }
             else if (type == ControlType.TreeItem)
             {
@@ -1049,12 +1158,20 @@ namespace AutoUIPlayback
             else
             {
 
-                Point p = element.GetClickablePoint();
-                SetCursorPos((int)p.X, (int)p.Y);
+                System.Windows.Rect rect = element.Current.BoundingRectangle;
+                int x = (int)rect.X + offsetX;
+                int y = (int)rect.Y + offsetY;
+                if (offsetX == 0 && offsetY == 0)
+                {
+                    Point point = element.GetClickablePoint();
+                    x = (int)point.X;
+                    y = (int)point.Y;
+                }
+                SetCursorPos(x, y);
 
-                mouse_event(MOUSEEVENTF_LEFTDOWN, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+                mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
 
-                mouse_event(MOUSEEVENTF_LEFTUP, (int)p.X, (int)p.Y, 0, UIntPtr.Zero);
+                mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
                 
             }
         }
@@ -1151,6 +1268,22 @@ namespace AutoUIPlayback
         public void SetFocus(string name, string type,string autoId)
         {
             AutomationElement element = FindElement(name, type,autoId);
+
+            if (element == null)
+            {
+
+                throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
+
+                    element.Current.AutomationId, element.Current.Name));
+
+            }
+
+            element.SetFocus();
+        }
+
+        public void SetFocus(string name, string type, string pname,string ptype)
+        {
+            AutomationElement element = FindElement(name, type, pname, ptype);
 
             if (element == null)
             {

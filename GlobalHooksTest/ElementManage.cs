@@ -43,29 +43,52 @@ namespace GlobalHooksTest
 
         //AutomationElement ElementSubscribeButton;
         //AutomationEventHandler UIAeventHandler;
+        private System.Timers.Timer timer;
+        private Thread workerThread;
         AutomationEventHandler menuOpenedHandler;
         AutomationEventHandler menuClosedHandler;
 
         public delegate void CallBackMessage(string message);
         public event CallBackMessage SendMessage;
         private static AutomationElement targetApp;
+        private AutomationElement currentElement;
+        private AutomationElement preElement;
+        private AutomationElement openedMenuElement;
+        private AutomationElement focusElement;
+        private static AutomationElement drawElement;
+        private static string elementInfo;
+        private static string preInfo;
+        private static int clickCount = 0;
+        private static bool clickFlag = false;
+        private static bool mouseDownFlag = false;
+        private static bool mouseUpFlag = false;
+        private static bool mouseMoveFlag = false;
+        private static int preX = 0;
+        private static int preY = 0;
+        private string menuInfo;
+        private string windowName;
+        private bool activateFlag = false;
+
+        private Keys keyDown;
+        private bool keyDownFlag = false;
 
         [DllImport("user32.dll")]
         public static extern int EnumWindows(CallBack lpfn, int lParam);
-        //public static CallBack callBackEnumWindows = new CallBack(WindowProcess);
-
+        //public static CallBack callBackEnumWindows = new CallBack(WindowProcess)
         [DllImport("user32.dll")]
         public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
-
         [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")]
         public static extern uint GetWindowThreadProcessId(IntPtr hWnd, ref uint lpdwProcessId);
-
         [DllImport("user32.dll")]
         private static extern uint RealGetWindowClass(IntPtr hWnd, StringBuilder pszType, uint cchType);
         [DllImport("user32.dll")]
         private static extern bool GetWindowRect(IntPtr hWnd, ref Rectangle rect);
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll", EntryPoint = "GetDoubleClickTime")]
+        public static extern int GetDoubleClickTime();
+        [DllImport("User32.dll")]
+        public extern static System.IntPtr GetDC(System.IntPtr hWnd); 
 
         public ElementManage()
         {
@@ -76,7 +99,12 @@ namespace GlobalHooksTest
             proceses = new List<Process>();
             log = new StringBuilder();
             rect = new System.Windows.Rect();
-            
+
+            timer = new System.Timers.Timer();
+            timer.Interval = GetDoubleClickTime();
+            timer.AutoReset = false;
+            timer.Elapsed += new System.Timers.ElapsedEventHandler(OnSetTimer);
+
             //UIAeventHandler = new AutomationEventHandler(OnUIAutomationEvent);
             menuClosedHandler = new AutomationEventHandler(OnMenuClosed);
             menuOpenedHandler = new AutomationEventHandler(OnMenuOpened);
@@ -301,13 +329,16 @@ namespace GlobalHooksTest
 
         public string GetCurrentElementInfo(AutomationElement element)
         {
+
+            ControlType controlType = GetElementType(element);
             
+
             StringBuilder str = new StringBuilder("\"");
            
             str.Append(GetElementName(element)).Append("\"");
             //string type = "";
 
-            //ControlType controlType = GetElementType(element);
+            
             string type = element.Current.LocalizedControlType;
             //if (controlType == ControlType.TreeItem)
             //{
@@ -344,13 +375,17 @@ namespace GlobalHooksTest
                         
                         str.Append(pt).Append("\"");
                     }
-                    
                 }
             }
             else
             {
                 str.Append(autoId).Append("\"");
             }
+            
+            System.Windows.Rect rect = element.Current.BoundingRectangle;
+            int offsetX = preX - (int)rect.Left;
+            int offsetY = preY - (int)rect.Top;
+            str.Append(offsetX).Append("\"").Append(offsetY).Append("\"");
             
             //AnalyseType(controlType, element);
             return str.ToString();
@@ -638,6 +673,8 @@ namespace GlobalHooksTest
                         if (IsOwnProcess(autoElem))
                         {
                             str = GetCurrentElementInfo(autoElem);
+
+                            currentElement = autoElem;
                         }
                     }
                     catch (System.Exception ex)
@@ -846,31 +883,60 @@ namespace GlobalHooksTest
 
         private void OnMenuClosed(object src, AutomationEventArgs e)
         {
-            AutomationElement selectionitemElement = src as AutomationElement;
+            //AutomationElement element = src as AutomationElement;
             //Feedback("MenuClosed event: ");
             //AddText("MenuClosed ");
+            if (openedMenuElement!=null)
+            {
+                openedMenuElement = null;
+            }
+//             string message = "";
+//             string name = GetElementName(element);
+//             if (name == "")
+//             {
+//                 return;
+//             }
+//             message += "\"" + GetElementName(element) + "\"menu item\"\"";
+//             SendMessage("CloseMenu|" + message);
         }
 
         private void OnMenuOpened(object src, AutomationEventArgs e)
         {
-            
+            if (mouseDownFlag)
+            {
+                return;
+            }
             AutomationElement element = src as AutomationElement;
-            string message = "";
+            menuInfo = "";
             //Thread thread = new Thread(() =>
             //{
             //message = GetCurrentElementInfo(element);
             //string time = GetTime();
+            if (openedMenuElement == null)
+            {
+                openedMenuElement = element;
+            }
+            else if (openedMenuElement == element)
+            {
+                return;
+            }
+            
             string name = GetElementName(element);
             if (name=="")
             {
                 return;
             }
-            message += "\"" + GetElementName(element) + "\"menu item\"\"";
+//             string autoId = element.Current.AutomationId;
+//             if (autoId!=null||autoId!="")
+//             {
+//             }
+            menuInfo = "\"" + GetElementName(element) + "\"menu item\"\"";
            // });
-            
+            //menuInfo = message;
             //Feedback("MenuOpened event: ");
             //AddText("OpenMenu|" + message);
-            SendMessage("OpenMenu|" + message);
+            openedMenuElement = element;
+            SendMessage("OpenMenu " + menuInfo);
         }
 
         private void OnFocusChange(object src, AutomationFocusChangedEventArgs e)
@@ -952,23 +1018,20 @@ namespace GlobalHooksTest
         
         public void ActivateWnd(IntPtr handler)
         {
-            try
-            {
-                Thread thread = new Thread(() =>
-                {
-                    
-                    AutomationElement element = GetElementFromHandle(handler);
-                    targetApp = element;
-                   
-                });
-                thread.Start();
-                thread.Join();
-
-                
-            }
-            catch (System.Exception ex)
+            focusElement = null;
+            string name = AddMainElementFromHandle(handler);
+            if (name == null || name == "\"" || name == " " || name == "")
             {
                 return;
+            }
+            if (mouseDownFlag)
+            {
+                windowName = name;
+                activateFlag = true;
+            }
+            else
+            {
+                SendMessage("Activate " + name);
             }
         }
 
@@ -1558,23 +1621,75 @@ namespace GlobalHooksTest
             return "";
         }
 
-        public void SetListener()
+        public void DrawElement(int x, int y)
         {
+            System.Windows.Point wpt = new System.Windows.Point(x, y);
+            Thread thread = new Thread(() =>
+            {
+                try
+                {
+                    
+                    AutomationElement delem = AutomationElement.FromPoint(wpt);
+
+                    if (IsOwnProcess(delem))
+                    {
+                        //drawElement = delem;
+                        System.Windows.Rect rect = delem.Current.BoundingRectangle;
+                        Rectangle r = new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
+                        ControlPaint.DrawReversibleFrame(r, Color.Red, FrameStyle.Thick);
+                        //System.IntPtr DesktopHandle = GetDC(System.IntPtr.Zero); 
+                        //Graphics g = Graphics.FromHdc(DesktopHandle);
+                        //g.DrawRectangle(new Pen(Color.Red), r);
+                            
+                       //g.Dispose();
+                       
+                        
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                   
+                }
+            });
+            thread.Start();
+            //sthread.Join();
+        }
+
+        public void SetWaitListener()
+        {
+            string message = "Wait ";
             Point point = Control.MousePosition;
             System.Windows.Point wpt = new System.Windows.Point(point.X, point.Y);
-            AutomationElement element = AutomationElement.FromPoint(wpt);
+            Thread thread = new Thread(() =>
+            {
+                try
+                {
+
+                    AutomationElement element = AutomationElement.FromPoint(wpt);
+
+                    if (IsOwnProcess(element))
+                    {
+                        bool enable = element.Current.IsEnabled;
+                        if (enable)
+                        {
+                            message += GetCurrentElementInfo(element) + "true\"";
+                        }
+                        else
+                        {
+                            message += GetCurrentElementInfo(element) + "false\"";
+                        }
+
+                    }
+                }
+                catch (System.Exception ex)
+                {
+
+                }
 
 
-            string message = "Wait|";
-            bool enable = element.Current.IsEnabled;
-            if (enable)
-            {
-                message += GetCurrentElementInfo(element)+"true";
-            }
-            else
-            {
-                message += GetCurrentElementInfo(element) + "false";
-            }
+            });
+            thread.Start();
+            thread.Join();
             SendMessage(message);
             //AutomationPropertyChangedEventHandler handler = new AutomationPropertyChangedEventHandler(OnPropertyChangedHandler);
             //Automation.AddAutomationPropertyChangedEventHandler(
@@ -1582,5 +1697,405 @@ namespace GlobalHooksTest
             //        TreeScope.Descendants,
             //        handler, AutomationElement.IsEnabledProperty);
         }
+
+        public void SetValueListener()
+        {
+            string message = "SetValue ";
+            Point point = Control.MousePosition;
+            System.Windows.Point wpt = new System.Windows.Point(point.X, point.Y);
+            Thread thread = new Thread(() =>
+            {
+                try
+                {
+
+                    AutomationElement element = AutomationElement.FromPoint(wpt);
+
+                    if (IsOwnProcess(element))
+                    {
+                        message += GetCurrentElementInfo(element);
+                        string value = GetElementValue(element);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+
+                }
+            });
+            thread.Start();
+            thread.Join();
+            SendMessage(message);
+        }
+
+        private string GetElementValue(AutomationElement element)
+        {
+            string value = "";
+            ControlType type = GetElementType(element);
+            if (type == ControlType.ListItem)
+            {
+                AutomationElement parent = GetParentElement(element);
+
+            }
+
+            return value;
+        }
+
+        public AutomationElement GetParentElement(AutomationElement element)
+        {
+            TreeWalker walker = TreeWalker.ControlViewWalker;
+            return walker.GetParent(element);
+        }
+
+        public void LeftMouseDownAction(int x, int y)
+        {
+            focusElement = null;
+            preX = x;
+            preY = y;
+            elementInfo = GetElementFromPoint(new Point(x, y));
+            
+            if (elementInfo == null || elementInfo == "")
+            {
+                return;
+            }
+            if (clickCount == 0)
+            {
+                preElement = currentElement;
+                preInfo = elementInfo;
+            }
+            
+            clickCount++;
+            if (!mouseDownFlag)
+            {
+                mouseDownFlag = true;
+                timer.Enabled = true;
+                timer.Start();
+            }
+        }
+
+        public void LeftMouseUpAction(int x, int y)
+        {
+            if (mouseMoveFlag)
+            {
+                if (elementInfo != null || elementInfo != "")
+                {
+                    int offsetX = x - preX;
+                    int offsetY = y - preY;
+                    if (Math.Abs(offsetX) > 3 && Math.Abs(offsetY) > 3)
+                    {
+                        SendMessage("Move " + elementInfo + offsetX + "\"" + offsetY + "\"");
+                    }
+                    else
+                    {
+                        SendMessage("Click " + elementInfo);
+                    }
+                    
+                    mouseMoveFlag = false;
+                }
+
+            }
+            else
+            {
+                elementInfo = GetElementFromPoint(new Point(x, y));
+
+                if (elementInfo == null || elementInfo == "")
+                {
+                    return ;
+                }
+                if (preElement == currentElement)
+                {
+                    if (mouseUpFlag)
+                    {
+                        mouseUpFlag = false;
+                        SendMessage("Click " + elementInfo);
+                    }
+                    else
+                    {
+                        clickFlag = true;
+                    }
+                }
+                else
+                {
+                    if (mouseUpFlag)
+                    {
+                        mouseUpFlag = false;
+                        SendMessage("MouseDown " + preInfo);
+                        SendMessage("MouseUp " + elementInfo);
+                    }
+                    else
+                    {
+                        clickFlag = true;
+                    }
+                    
+                }
+            }
+            if (activateFlag)
+            {
+                activateFlag = false;
+                SendMessage("Activate " + windowName);
+                windowName = "";
+            }
+        }
+
+        public void RightMouseDownAction(int x, int y)
+        {
+            focusElement = null;
+            preX = x;
+            preY = y;
+            elementInfo = GetElementFromPoint(new Point(x, y));
+
+            if (elementInfo == null || elementInfo == "")
+            {
+                return ;
+            }
+            preElement = currentElement;
+        }
+
+        public void RightMouseUpAction(int x, int y)
+        {
+            elementInfo = GetElementFromPoint(new Point(x, y));
+
+            if (elementInfo == null || elementInfo == "")
+            {
+                return;
+            }
+            if (preElement == currentElement)
+            {
+                SendMessage("RightClick " + elementInfo);
+            }
+
+            if (activateFlag)
+            {
+                activateFlag = false;
+                SendMessage("Activate " + windowName);
+                windowName = "";
+            }
+        }
+
+        public void MouseMoveAction(int x, int y)
+        {
+//             int offsetX = Math.Abs(x - preX);
+//             int offsetY = Math.Abs(y - preY);
+//             SendMessage("X:" + offsetX + " Y:" + offsetY);
+//             if (offsetX>3&&offsetY>3)
+//             {
+            mouseMoveFlag = true;
+            clickFlag = false;
+            clickCount = 0;
+            mouseDownFlag = false;
+            timer.Stop();
+           /* }*/
+            
+        }
+        
+        //public string GetMouseAction(string action,MouseEventArgs e)
+        //{
+            
+        //    if (action == "LeftMouseDown")
+        //    {
+        //        preX = e.X;
+        //        preY = e.Y;
+        //        elementInfo = GetElementFromPoint(new Point(e.X, e.Y));
+        //        //                 if (openedMenuElement != null && currentElement.Current.LocalizedControlType == "menu item" && currentElement.Current.Name == openedMenuElement.Current.Name)
+        //        //                 {
+        //        //                     return "";
+        //        //                 }
+        //        if (elementInfo == null || elementInfo == "")
+        //        {
+        //            return "";
+        //        }
+
+        //        preElement = currentElement;
+        //        clickCount++;
+        //        if (!mouseDownFlag)
+        //        {
+        //            mouseDownFlag = true;
+        //            timer.Enabled = true;
+        //            timer.Start();
+        //        }
+                
+        //    }
+        //    else if (action == "LeftMouseUp")
+        //    {
+                
+        //        if (mouseMoveFlag)
+        //        {
+        //            if (elementInfo != null || elementInfo != "")
+        //            {
+        //                int offsetX = e.X - preX;
+        //                int offsetY = e.Y - preY;
+        //                SendMessage("Move " + elementInfo + offsetX + "\"" + offsetY + "\"");
+        //                mouseMoveFlag = false;
+        //            }
+                    
+        //        }
+        //        else
+        //        {
+        //            elementInfo = GetElementFromPoint(new Point(e.X, e.Y));
+
+        //            if (elementInfo == null || elementInfo == "")
+        //            {
+        //                return "";
+        //            }
+        //            if (preElement == currentElement)
+        //            {
+        //                if (mouseUpFlag)
+        //                {
+        //                    mouseUpFlag = false;
+        //                    SendMessage("Click " + elementInfo);
+        //                }
+        //                else
+        //                {
+        //                    clickFlag = true;
+        //                }
+        //            }
+        //        }
+                
+        //    }
+        //    else if (action == "RightMouseDown")
+        //    {
+        //        preX = e.X;
+        //        preY = e.Y;
+        //        elementInfo = GetElementFromPoint(new Point(e.X, e.Y));
+
+        //        if (elementInfo == null || elementInfo == "")
+        //        {
+        //            return "";
+        //        }
+        //        preElement = currentElement;
+        //    }
+        //    else if (action == "RightMouseUp")
+        //    {
+                
+        //        elementInfo = GetElementFromPoint(new Point(e.X, e.Y));
+
+        //        if (elementInfo == null || elementInfo == "")
+        //        {
+        //            return "";
+        //        }
+        //        if (preElement == currentElement)
+        //        {
+        //            SendMessage("RightClick " + elementInfo);
+        //        }
+        //    }
+        //    else if (action == "MouseMove")
+        //    {
+        //        mouseMoveFlag = true;
+        //        clickFlag = false;
+        //        clickCount = 0;
+        //        mouseDownFlag = false;
+        //        timer.Stop();
+        //    }
+        //    return "";
+        //}
+
+        public void KeyDownAction(Keys key)
+        {
+            if (focusElement==null)
+            {
+                string str = "";
+                Thread thread = new Thread(() =>
+                {
+                    try
+                    {
+                        focusElement = AutomationElement.FocusedElement;
+                        if (IsOwnProcess(focusElement))
+                        {
+                            str = GetCurrentElementInfo(focusElement);
+
+                            currentElement = focusElement;
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        str = null;
+                    }
+
+
+                });
+                thread.Start();
+                thread.Join();
+
+                SendMessage("SetFocus " + str);
+            }
+            if (keyDownFlag)
+            {
+                SendMessage("KeyDown \"" + keyDown + "\"");
+            }
+            keyDown = key;
+            keyDownFlag = true;
+            
+        }
+
+        public void KeyUpAction(Keys key)
+        {
+            if (keyDownFlag && key == keyDown)
+            {
+                SendMessage("SendKey \"" + keyDown + "\"");
+            }
+            else
+            {
+                SendMessage("KeyUp \"" + key + "\"");
+            }
+            keyDownFlag = false;
+        }
+
+//         public string GetKeysAction(string action, Keys key)
+//         {
+// //             string message = "";
+// //             if (action == "KeyDown")
+// //             {
+// //                 downKey = key;
+// //             }
+// //             else if (action == "KeyUp")
+// //             {
+// //                 if (downKey==key)
+// //                 {
+// //                     return "SendKey " + key;
+// //                 }
+// //             }
+// //             
+// //             return message;
+//         }
+
+        private void OnSetTimer(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (clickCount==1)
+            {
+                if (clickFlag)
+                {
+                    SendMessage("Click " + preInfo);
+                }
+                else
+                {
+                    mouseUpFlag = true;
+                }
+            }
+            else if (clickCount ==2)
+            {
+                if (clickFlag)
+                {
+                    SendMessage("DoubleClick " + preInfo);
+                }
+            }
+            if (activateFlag)
+            {
+                activateFlag = false;
+                SendMessage("Activate " + windowName);
+                windowName = "";
+            }
+            clickFlag = false;
+            clickCount = 0;
+            mouseDownFlag = false;
+            timer.Stop();
+        }
+
+        public void WriteToFile(string path)
+        {
+            using (StreamWriter sw = File.CreateText(path))
+            {
+                sw.Write(log.ToString());
+            }
+        }
+
+        
     }
 }
