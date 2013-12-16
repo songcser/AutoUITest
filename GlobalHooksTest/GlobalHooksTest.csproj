@@ -98,15 +98,9 @@
     <Reference Include="System.Xml">
       <Name>System.XML</Name>
     </Reference>
-    <Reference Include="UIAutomationClient">
-      <HintPath>..\DLL\UIAutomationClient.dll</HintPath>
-    </Reference>
-    <Reference Include="UIAutomationClientsideProviders">
-      <HintPath>..\DLL\UIAutomationClientsideProviders.dll</HintPath>
-    </Reference>
-    <Reference Include="UIAutomationTypes">
-      <HintPath>..\DLL\UIAutomationTypes.dll</HintPath>
-    </Reference>
+    <Reference Include="UIAutomationClient" />
+    <Reference Include="UIAutomationClientsideProviders" />
+    <Reference Include="UIAutomationTypes" />
     <Reference Include="windowsbase">
       <HintPath>..\DLL\windowsbase.dll</HintPath>
     </Reference>

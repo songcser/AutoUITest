@@ -29,6 +29,8 @@ namespace GlobalHooksTest
         private static StringBuilder log;
         private static System.Windows.Rect rect;
 
+        private const int LB_GETTEXT = 0x0189; 
+
         private List<Process> proceses = null;
         private Process mainProcess = null;
         private List<IntPtr> handleList = null;
@@ -49,7 +51,7 @@ namespace GlobalHooksTest
         AutomationEventHandler menuClosedHandler;
 
         public delegate void CallBackMessage(string message);
-        public event CallBackMessage SendMessage;
+        public event CallBackMessage SendMessageBack;
         private static AutomationElement targetApp;
         private AutomationElement currentElement;
         private AutomationElement preElement;
@@ -68,6 +70,7 @@ namespace GlobalHooksTest
         private string menuInfo;
         private string windowName;
         private bool activateFlag = false;
+        private bool hookFlag = false;
 
         private Keys keyDown;
         private bool keyDownFlag = false;
@@ -88,7 +91,9 @@ namespace GlobalHooksTest
         [DllImport("user32.dll", EntryPoint = "GetDoubleClickTime")]
         public static extern int GetDoubleClickTime();
         [DllImport("User32.dll")]
-        public extern static System.IntPtr GetDC(System.IntPtr hWnd); 
+        public extern static System.IntPtr GetDC(System.IntPtr hWnd);
+        [DllImport("user32.dll", EntryPoint = "SendMessage", CharSet = CharSet.Unicode)]
+        internal static extern IntPtr SendMessage(int hwnd, int msg, int wParam, StringBuilder lParam);
 
         public ElementManage()
         {
@@ -108,6 +113,11 @@ namespace GlobalHooksTest
             //UIAeventHandler = new AutomationEventHandler(OnUIAutomationEvent);
             menuClosedHandler = new AutomationEventHandler(OnMenuClosed);
             menuOpenedHandler = new AutomationEventHandler(OnMenuOpened);
+        }
+
+        public void SetHookFlag(bool flag)
+        {
+            hookFlag = flag;
         }
 
         public bool isTopWindow()
@@ -348,10 +358,22 @@ namespace GlobalHooksTest
             //{
             //    type = "menu item";
             //}
+
             
             str.Append(type).Append("\"");
 
+            bool enable = element.Current.IsEnabled;
+            if (enable)
+            {
+                str.Append("true\"");
+            }
+            else
+            {
+                str.Append("false\"");
+            }
+
             string autoId = GetElementAutomationId(element);
+
             if (autoId=="")
             {
                 TreeWalker walker = TreeWalker.ControlViewWalker;
@@ -853,7 +875,7 @@ namespace GlobalHooksTest
                 if (name != "" && type != "")
                 {
                     //AddText("StructureChange|" + name + "|" + type);
-                    SendMessage("PropertyChange|\"" + name + "\"" + type + "\"\"");
+                    SendMessageBack("PropertyChange|\"" + name + "\"" + type + "\"\"");
                 }
             }
             catch (System.Exception ex)
@@ -902,7 +924,7 @@ namespace GlobalHooksTest
 
         private void OnMenuOpened(object src, AutomationEventArgs e)
         {
-            if (mouseDownFlag)
+            if (mouseDownFlag||!hookFlag)
             {
                 return;
             }
@@ -936,7 +958,7 @@ namespace GlobalHooksTest
             //Feedback("MenuOpened event: ");
             //AddText("OpenMenu|" + message);
             openedMenuElement = element;
-            SendMessage("OpenMenu " + menuInfo);
+            SendMessageBack("OpenMenu " + menuInfo);
         }
 
         private void OnFocusChange(object src, AutomationFocusChangedEventArgs e)
@@ -1031,7 +1053,7 @@ namespace GlobalHooksTest
             }
             else
             {
-                SendMessage("Activate " + name);
+                SendMessageBack("Activate " + name);
             }
         }
 
@@ -1188,330 +1210,330 @@ namespace GlobalHooksTest
             
         }
 
-        public StringBuilder AnalysisStr()
-        {
-            string buf = log.ToString();
-            using (StreamWriter sw = File.CreateText("E:\\Test\\FunAutoTester\\Log2.txt"))
-            {
-                sw.Write(buf);
-            }
+        //public StringBuilder AnalysisStr()
+        //{
+        //    string buf = log.ToString();
+        //    using (StreamWriter sw = File.CreateText("E:\\Test\\FunAutoTester\\Log2.txt"))
+        //    {
+        //        sw.Write(buf);
+        //    }
 
-            bool first = true;
-            //bool dFlag = true;
-            string cmd = "";
-            string elem = "";
-            string time = "";
-            //string temp = "";
-            string downTime = "";
-            int length = 0;
-            bool dcFlag = true;
+        //    bool first = true;
+        //    //bool dFlag = true;
+        //    string cmd = "";
+        //    string elem = "";
+        //    string time = "";
+        //    //string temp = "";
+        //    string downTime = "";
+        //    int length = 0;
+        //    bool dcFlag = true;
 
-            StringBuilder builder = new StringBuilder();
+        //    StringBuilder builder = new StringBuilder();
 
-            string[] strLines = buf.Split(new char[] { '\n' });
-            for (int i = 0; i < strLines.Length; i++)
-            {
-                //int t = 0;
-                string[] args = strLines[i].Split(new char[] { '|' });
-                //if (time!=""&&args.Length>1)
-                //{
-                //    t = Int32.Parse(args[2]) - Int32.Parse(time);
-                //    if (t>1000*60*3)
-                //    {
-                //        string message = string.Format("Wait {0}\n", t);
-                //        builder.Append(message);
-                //    }
-                //}
+        //    string[] strLines = buf.Split(new char[] { '\n' });
+        //    for (int i = 0; i < strLines.Length; i++)
+        //    {
+        //        //int t = 0;
+        //        string[] args = strLines[i].Split(new char[] { '|' });
+        //        //if (time!=""&&args.Length>1)
+        //        //{
+        //        //    t = Int32.Parse(args[2]) - Int32.Parse(time);
+        //        //    if (t>1000*60*3)
+        //        //    {
+        //        //        string message = string.Format("Wait {0}\n", t);
+        //        //        builder.Append(message);
+        //        //    }
+        //        //}
                 
-                if (args[0] == "LeftMouseDown")
-                {
-                    if (first)
-                    {
-                        first = false;
-                        string message = string.Format("LeftMouseDown {0}\n", args[1]);
-                        builder.Append(message);
-                        length = message.Length;
-                        downTime = args[2];
-                    }
-                    else
-                    {
-                        int t = Int32.Parse(args[2]) - Int32.Parse(time);
-                        if (t < 500 && elem == args[1] && cmd == "LeftMouseUp"&&dcFlag)
-                        {
-                            builder.Remove(builder.Length - length, length);
-                            string message = string.Format("DoubleClick {0}\n", args[1]);
-                            builder.Append(message);
-                            length = message.Length;
-                            dcFlag = false;
+        //        if (args[0] == "LeftMouseDown")
+        //        {
+        //            if (first)
+        //            {
+        //                first = false;
+        //                string message = string.Format("LeftMouseDown {0}\n", args[1]);
+        //                builder.Append(message);
+        //                length = message.Length;
+        //                downTime = args[2];
+        //            }
+        //            else
+        //            {
+        //                int t = Int32.Parse(args[2]) - Int32.Parse(time);
+        //                if (t < 500 && elem == args[1] && cmd == "LeftMouseUp"&&dcFlag)
+        //                {
+        //                    builder.Remove(builder.Length - length, length);
+        //                    string message = string.Format("DoubleClick {0}\n", args[1]);
+        //                    builder.Append(message);
+        //                    length = message.Length;
+        //                    dcFlag = false;
 
-                        }
-                        else
-                        {
-                            string message = string.Format("LeftMouseDown {0}\n", args[1]);
-                            builder.Append(message);
-                            length = message.Length;
-                            downTime = args[2];
-                            dcFlag = true;
+        //                }
+        //                else
+        //                {
+        //                    string message = string.Format("LeftMouseDown {0}\n", args[1]);
+        //                    builder.Append(message);
+        //                    length = message.Length;
+        //                    downTime = args[2];
+        //                    dcFlag = true;
                             
-                        }
+        //                }
 
-                    }
+        //            }
 
-                }
-                else if (args[0] == "LeftMouseUp")
-                {
-                    if (dcFlag && time != "")
-                    {
-                        int t = Int32.Parse(args[2]) - Int32.Parse(time);
-                        if (t < 200 && elem == args[1] && cmd == "LeftMouseDown")
-                        {
-                            builder.Remove(builder.Length - length, length);
-                            string message = string.Format("Click {0}\n", args[1]);
-                            builder.Append(message);
-                            length = message.Length;
-                        }
-                        else
-                        {
-                            string message = string.Format("LeftMouseUp {0}\n", args[1]);
-                            builder.Append(message);
-                            length = message.Length;
-                        }
-                    }
-                    else
-                    {
-                        dcFlag = false;
+        //        }
+        //        else if (args[0] == "LeftMouseUp")
+        //        {
+        //            if (dcFlag && time != "")
+        //            {
+        //                int t = Int32.Parse(args[2]) - Int32.Parse(time);
+        //                if (t < 200 && elem == args[1] && cmd == "LeftMouseDown")
+        //                {
+        //                    builder.Remove(builder.Length - length, length);
+        //                    string message = string.Format("Click {0}\n", args[1]);
+        //                    builder.Append(message);
+        //                    length = message.Length;
+        //                }
+        //                else
+        //                {
+        //                    string message = string.Format("LeftMouseUp {0}\n", args[1]);
+        //                    builder.Append(message);
+        //                    length = message.Length;
+        //                }
+        //            }
+        //            else
+        //            {
+        //                dcFlag = false;
                         
-                    }
+        //            }
 
-                }
-                else if (args[0] == "RightMouseDown")
-                {
-                    if (first)
-                    {
-                        first = false;
-                        string message = string.Format("RightMouseDown {0}\n", args[1]);
-                        builder.Append(message);
-                        length = message.Length;
-                    }
-                    else
-                    {
-                        string message = string.Format("RightMouseDown {0}\n", args[1]);
-                        builder.Append(message);
-                        length = message.Length;
-                    }
-                }
-                else if (args[0] == "RightMouseUp")
-                {
-                    int t = Int32.Parse(args[2]) - Int32.Parse(time);
-                    if (t < 200 && elem == args[1] && cmd == "RightMouseDown")
-                    {
-                        builder.Remove(builder.Length - length, length);
-                        string message = string.Format("RightClick {0}\n", args[1]);
-                        builder.Append(message);
-                        length = message.Length;
-                    }
-                    else
-                    {
-                        string message = string.Format("RightMouseUp {0}\n", args[1]);
-                        builder.Append(message);
-                        length = message.Length;
-                    }
-                }
-                else if (args[0] == "MouseMove")
-                {
-                    string message = string.Format("MouseMove {0}\n", args[1]);
-                    builder.Append(message);
-                    length = message.Length;
-                }
-                else if (args[0] == "KeyDown")
-                {
+        //        }
+        //        else if (args[0] == "RightMouseDown")
+        //        {
+        //            if (first)
+        //            {
+        //                first = false;
+        //                string message = string.Format("RightMouseDown {0}\n", args[1]);
+        //                builder.Append(message);
+        //                length = message.Length;
+        //            }
+        //            else
+        //            {
+        //                string message = string.Format("RightMouseDown {0}\n", args[1]);
+        //                builder.Append(message);
+        //                length = message.Length;
+        //            }
+        //        }
+        //        else if (args[0] == "RightMouseUp")
+        //        {
+        //            int t = Int32.Parse(args[2]) - Int32.Parse(time);
+        //            if (t < 200 && elem == args[1] && cmd == "RightMouseDown")
+        //            {
+        //                builder.Remove(builder.Length - length, length);
+        //                string message = string.Format("RightClick {0}\n", args[1]);
+        //                builder.Append(message);
+        //                length = message.Length;
+        //            }
+        //            else
+        //            {
+        //                string message = string.Format("RightMouseUp {0}\n", args[1]);
+        //                builder.Append(message);
+        //                length = message.Length;
+        //            }
+        //        }
+        //        else if (args[0] == "MouseMove")
+        //        {
+        //            string message = string.Format("MouseMove {0}\n", args[1]);
+        //            builder.Append(message);
+        //            length = message.Length;
+        //        }
+        //        else if (args[0] == "KeyDown")
+        //        {
 
-                    string message = string.Format("KeyDown \"{0}\"\n", args[1]);
-                    builder.Append(message);
-                    length = message.Length;
-                    #region MyRegion
-                    //if (cmd == "KeyUp")
-                    //{
-                    //    builder.Remove(builder.Length - 1, 1);
-                    //    //string tmp = args[1].Substring(1, 6);
-                    //    if (args[1].Length == 7 && args[1].Substring(0, 6) == "NumPad")
-                    //    {
-                    //        //builder.Remove(builder.Length - 2, 2);
-                    //        args[1] = args[1].Substring(6, 1) + "\"";
-                    //        builder.Append(args[1] + "\n");
+        //            string message = string.Format("KeyDown \"{0}\"\n", args[1]);
+        //            builder.Append(message);
+        //            length = message.Length;
+        //            #region MyRegion
+        //            //if (cmd == "KeyUp")
+        //            //{
+        //            //    builder.Remove(builder.Length - 1, 1);
+        //            //    //string tmp = args[1].Substring(1, 6);
+        //            //    if (args[1].Length == 7 && args[1].Substring(0, 6) == "NumPad")
+        //            //    {
+        //            //        //builder.Remove(builder.Length - 2, 2);
+        //            //        args[1] = args[1].Substring(6, 1) + "\"";
+        //            //        builder.Append(args[1] + "\n");
 
-                    //    }
-                    //    else if (args[1].Length == 2 && args[1].Substring(0, 1) == "D")
-                    //    {
-                    //        //builder.Remove(builder.Length - 2, 2);
-                    //        args[1] = args[1].Substring(1, 1) + "\"";
-                    //        builder.Append(args[1] + "\n");
-                    //    }
-                    //    else
-                    //    {
-                    //        //builder.Remove(builder.Length - 1, 1);
-                    //        builder.Append(args[1] + "\"\n");
+        //            //    }
+        //            //    else if (args[1].Length == 2 && args[1].Substring(0, 1) == "D")
+        //            //    {
+        //            //        //builder.Remove(builder.Length - 2, 2);
+        //            //        args[1] = args[1].Substring(1, 1) + "\"";
+        //            //        builder.Append(args[1] + "\n");
+        //            //    }
+        //            //    else
+        //            //    {
+        //            //        //builder.Remove(builder.Length - 1, 1);
+        //            //        builder.Append(args[1] + "\"\n");
 
-                    //    }
+        //            //    }
 
-                    //}
-                    //else
-                    //{
-                    //    //string tmp = args[1].Substring(1, 6);
-                    //    if (args[1].Length == 7 && args[1].Substring(0, 6) == "NumPad")
-                    //    {
-                    //        args[1] = args[1].Substring(6, 1) ;
+        //            //}
+        //            //else
+        //            //{
+        //            //    //string tmp = args[1].Substring(1, 6);
+        //            //    if (args[1].Length == 7 && args[1].Substring(0, 6) == "NumPad")
+        //            //    {
+        //            //        args[1] = args[1].Substring(6, 1) ;
 
-                    //    }
-                    //    else if (args[1].Length == 2 && args[1].Substring(0, 1) == "D")
-                    //    {
-                    //        args[1] = args[1].Substring(1, 1);
+        //            //    }
+        //            //    else if (args[1].Length == 2 && args[1].Substring(0, 1) == "D")
+        //            //    {
+        //            //        args[1] = args[1].Substring(1, 1);
 
-                    //    }
+        //            //    }
 
-                    //    builder.Append("SendKeys \"" + args[1] + "\"\n");
-                    //} 
-                    #endregion
-                }
-                else if (args[0] == "KeyUp")
-                {
-                    if (cmd == "KeyDown" && args[1] == elem)
-                    {
-                        builder.Remove(builder.Length - length, length);
-                        string message = string.Format("SendKey \"{0}\"\n", args[1]);
-                        builder.Append(message);
-                        length = message.Length;
-                    }
-                    else
-                    {
-                        string message = string.Format("KeyUp \"{0}\"\n", args[1]);
-                        builder.Append(message);
-                        length = message.Length;
-                    }
-                    #region MyRegion
-                    //if (cmd == "KeyDown")
-                    //{
-                    //    builder.Remove(builder.Length - 1, 1);
-                    //    //string tmp = args[1].Substring(1, 6);
-                    //    if (args[1].Length == 7 && args[1].Substring(0, 6) == "NumPad")
-                    //    {
-                    //        //builder.Remove(builder.Length - 2, 2);
-                    //        args[1] = args[1].Substring(6, 1) + "\"";
-                    //        builder.Append(args[1] + "\n");
+        //            //    builder.Append("SendKeys \"" + args[1] + "\"\n");
+        //            //} 
+        //            #endregion
+        //        }
+        //        else if (args[0] == "KeyUp")
+        //        {
+        //            if (cmd == "KeyDown" && args[1] == elem)
+        //            {
+        //                builder.Remove(builder.Length - length, length);
+        //                string message = string.Format("SendKey \"{0}\"\n", args[1]);
+        //                builder.Append(message);
+        //                length = message.Length;
+        //            }
+        //            else
+        //            {
+        //                string message = string.Format("KeyUp \"{0}\"\n", args[1]);
+        //                builder.Append(message);
+        //                length = message.Length;
+        //            }
+        //            #region MyRegion
+        //            //if (cmd == "KeyDown")
+        //            //{
+        //            //    builder.Remove(builder.Length - 1, 1);
+        //            //    //string tmp = args[1].Substring(1, 6);
+        //            //    if (args[1].Length == 7 && args[1].Substring(0, 6) == "NumPad")
+        //            //    {
+        //            //        //builder.Remove(builder.Length - 2, 2);
+        //            //        args[1] = args[1].Substring(6, 1) + "\"";
+        //            //        builder.Append(args[1] + "\n");
 
-                    //    }
-                    //    else if (args[1].Length == 2 && args[1].Substring(0, 1) == "D")
-                    //    {
-                    //        //builder.Remove(builder.Length - 2, 2);
-                    //        args[1] = args[1].Substring(1, 1) + "\"";
-                    //        builder.Append(args[1] + "\n");
-                    //    }
-                    //    else
-                    //    {
-                    //        //builder.Remove(builder.Length - 1, 1);
-                    //        builder.Append(args[1] + "\"\n");
+        //            //    }
+        //            //    else if (args[1].Length == 2 && args[1].Substring(0, 1) == "D")
+        //            //    {
+        //            //        //builder.Remove(builder.Length - 2, 2);
+        //            //        args[1] = args[1].Substring(1, 1) + "\"";
+        //            //        builder.Append(args[1] + "\n");
+        //            //    }
+        //            //    else
+        //            //    {
+        //            //        //builder.Remove(builder.Length - 1, 1);
+        //            //        builder.Append(args[1] + "\"\n");
 
-                    //    }
+        //            //    }
 
-                    //}
-                    //else
-                    //{
-                    //    //string tmp = args[1].Substring(1, 6);
-                    //    if (args[1].Length == 7 && args[1].Substring(0, 6) == "NumPad")
-                    //    {
-                    //        args[1] = args[1].Substring(6, 1);
+        //            //}
+        //            //else
+        //            //{
+        //            //    //string tmp = args[1].Substring(1, 6);
+        //            //    if (args[1].Length == 7 && args[1].Substring(0, 6) == "NumPad")
+        //            //    {
+        //            //        args[1] = args[1].Substring(6, 1);
 
-                    //    }
-                    //    else if (args[1].Length == 2 && args[1].Substring(0, 1) == "D")
-                    //    {
-                    //        args[1] = args[1].Substring(1, 1);
+        //            //    }
+        //            //    else if (args[1].Length == 2 && args[1].Substring(0, 1) == "D")
+        //            //    {
+        //            //        args[1] = args[1].Substring(1, 1);
 
-                    //    }
+        //            //    }
 
-                    //    builder.Append("SendKeys \"" + args[1] + "\"\n");
-                    //} 
-                    #endregion
-                }
-                else if (args[0] == "Activate")
-                {
-                    string message = string.Format("Activate {0}\n", args[1]);
-                    builder.Append(message);
-                    length = message.Length;
-                }
-                else if (args[0] == "SetFocus")
-                {
-                    string message = string.Format("SetFocus {0}\n", args[1]);
-                    builder.Append(message);
-                    length = message.Length;
-                }
-                else if (args[0] == "OpenMenu")
-                {
-                    if (cmd == "LeftMouseDown")
-                    {
-                        continue;
-                    }
-                    else if (cmd == "LeftMouseUp")
-                    {
+        //            //    builder.Append("SendKeys \"" + args[1] + "\"\n");
+        //            //} 
+        //            #endregion
+        //        }
+        //        else if (args[0] == "Activate")
+        //        {
+        //            string message = string.Format("Activate {0}\n", args[1]);
+        //            builder.Append(message);
+        //            length = message.Length;
+        //        }
+        //        else if (args[0] == "SetFocus")
+        //        {
+        //            string message = string.Format("SetFocus {0}\n", args[1]);
+        //            builder.Append(message);
+        //            length = message.Length;
+        //        }
+        //        else if (args[0] == "OpenMenu")
+        //        {
+        //            if (cmd == "LeftMouseDown")
+        //            {
+        //                continue;
+        //            }
+        //            else if (cmd == "LeftMouseUp")
+        //            {
                         
-                        //string arg = elem.Substring(0, args[1].Length - 1) + "\"";
-                        //if (arg != args[1])
-                        //{
-                        //    string message = string.Format("MenuOpened {0}\n", args[1]);
-                        //    builder.Append(message);
-                        //    length = message.Length;
-                        //}
-                    }
-                    else if (cmd == "OpenMenu"&&args[1] == elem)
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        string message = string.Format("OpenMenu {0}\n", args[1]);
-                        builder.Append(message);
-                        length = message.Length;
-                    }
+        //                //string arg = elem.Substring(0, args[1].Length - 1) + "\"";
+        //                //if (arg != args[1])
+        //                //{
+        //                //    string message = string.Format("MenuOpened {0}\n", args[1]);
+        //                //    builder.Append(message);
+        //                //    length = message.Length;
+        //                //}
+        //            }
+        //            else if (cmd == "OpenMenu"&&args[1] == elem)
+        //            {
+        //                continue;
+        //            }
+        //            else
+        //            {
+        //                string message = string.Format("OpenMenu {0}\n", args[1]);
+        //                builder.Append(message);
+        //                length = message.Length;
+        //            }
                                         
                     
-                }
-                else if (args[0] == "Start")
-                {
-                    string message = string.Format("Start {0}\n", args[1]);
-                    builder.Append(message);
-                    length = message.Length;
-                }
-                else if (args[0] == "WindowCreate")
-                {
-                    string message = string.Format("WindowCreate {0}\n", args[1]);
-                    builder.Append(message);
-                    length = message.Length;
-                }
-                else if (args[0] == "Stop")
-                {
-                    builder.Append("Stop");
-                }
-                else if(args[0] == "Wait")
-                {
-                    string message = string.Format("Wait {0}\n", args[1]);
-                    builder.Append(message);
-                    length = message.Length;
-                }
-                if (args.Length == 3)
-                {
-                    cmd = args[0];
-                    elem = args[1];
-                    time = args[2];
-                }
-                else if (args.Length == 2)
-                {
-                    cmd = args[0];
-                    elem = args[1];
-                }
+        //        }
+        //        else if (args[0] == "Start")
+        //        {
+        //            string message = string.Format("Start {0}\n", args[1]);
+        //            builder.Append(message);
+        //            length = message.Length;
+        //        }
+        //        else if (args[0] == "WindowCreate")
+        //        {
+        //            string message = string.Format("WindowCreate {0}\n", args[1]);
+        //            builder.Append(message);
+        //            length = message.Length;
+        //        }
+        //        else if (args[0] == "Stop")
+        //        {
+        //            builder.Append("Stop");
+        //        }
+        //        else if(args[0] == "Wait")
+        //        {
+        //            string message = string.Format("Wait {0}\n", args[1]);
+        //            builder.Append(message);
+        //            length = message.Length;
+        //        }
+        //        if (args.Length == 3)
+        //        {
+        //            cmd = args[0];
+        //            elem = args[1];
+        //            time = args[2];
+        //        }
+        //        else if (args.Length == 2)
+        //        {
+        //            cmd = args[0];
+        //            elem = args[1];
+        //        }
 
-            }
+        //    }
 
-            return builder;
-        }
+        //    return builder;
+        //}
 
         public void AddText(string str)
         {
@@ -1629,22 +1651,22 @@ namespace GlobalHooksTest
                 try
                 {
                     
-                    AutomationElement delem = AutomationElement.FromPoint(wpt);
-
-                    if (IsOwnProcess(delem))
-                    {
-                        //drawElement = delem;
-                        System.Windows.Rect rect = delem.Current.BoundingRectangle;
-                        Rectangle r = new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
-                        ControlPaint.DrawReversibleFrame(r, Color.Red, FrameStyle.Thick);
-                        //System.IntPtr DesktopHandle = GetDC(System.IntPtr.Zero); 
-                        //Graphics g = Graphics.FromHdc(DesktopHandle);
-                        //g.DrawRectangle(new Pen(Color.Red), r);
-                            
-                       //g.Dispose();
-                       
-                        
-                    }
+//                     AutomationElement delem = AutomationElement.FromPoint(wpt);
+// 
+//                     if (IsOwnProcess(delem))
+//                     {
+//                         //drawElement = delem;
+//                         System.Windows.Rect rect = delem.Current.BoundingRectangle;
+//                         Rectangle r = new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
+//                         ControlPaint.DrawReversibleFrame(r, Color.Red, FrameStyle.Thick);
+//                         //System.IntPtr DesktopHandle = GetDC(System.IntPtr.Zero); 
+//                         //Graphics g = Graphics.FromHdc(DesktopHandle);
+//                         //g.DrawRectangle(new Pen(Color.Red), r);
+//                             
+//                        //g.Dispose();
+//                        
+//                         
+//                     }
                 }
                 catch (System.Exception ex)
                 {
@@ -1669,15 +1691,26 @@ namespace GlobalHooksTest
 
                     if (IsOwnProcess(element))
                     {
-                        bool enable = element.Current.IsEnabled;
-                        if (enable)
+                        ControlType type = GetElementType(element);
+                        if (type==ControlType.Edit)
                         {
-                            message += GetCurrentElementInfo(element) + "true\"";
+                            ValuePattern currentPattern = GetValuePattern(element);
+                            string value = currentPattern.Current.Value;
+                            message += GetCurrentElementInfo(element) +value+ "\"";
                         }
                         else
                         {
-                            message += GetCurrentElementInfo(element) + "false\"";
+                            bool enable = element.Current.IsEnabled;
+                            if (enable)
+                            {
+                                message += GetCurrentElementInfo(element) + "true\"";
+                            }
+                            else
+                            {
+                                message += GetCurrentElementInfo(element) + "false\"";
+                            }
                         }
+                        
 
                     }
                 }
@@ -1690,53 +1723,104 @@ namespace GlobalHooksTest
             });
             thread.Start();
             thread.Join();
-            SendMessage(message);
-            //AutomationPropertyChangedEventHandler handler = new AutomationPropertyChangedEventHandler(OnPropertyChangedHandler);
-            //Automation.AddAutomationPropertyChangedEventHandler(
-            //        element,
-            //        TreeScope.Descendants,
-            //        handler, AutomationElement.IsEnabledProperty);
+            SendMessageBack(message);
+           
         }
 
         public void SetValueListener()
         {
-            string message = "SetValue ";
+            string message = "";
             Point point = Control.MousePosition;
             System.Windows.Point wpt = new System.Windows.Point(point.X, point.Y);
-            Thread thread = new Thread(() =>
-            {
+//             Thread thread = new Thread(() =>
+//             {
                 try
                 {
-
                     AutomationElement element = AutomationElement.FromPoint(wpt);
 
                     if (IsOwnProcess(element))
                     {
-                        message += GetCurrentElementInfo(element);
-                        string value = GetElementValue(element);
+                        //message += GetCurrentElementInfo(element);
+                        message = GetElementValue(element);
+                        
                     }
                 }
                 catch (System.Exception ex)
                 {
 
                 }
-            });
-            thread.Start();
-            thread.Join();
-            SendMessage(message);
+//             });
+//             thread.Start();
+//             thread.Join();
+                SendMessageBack(message);
+        }
+
+        public static ValuePattern GetValuePattern(AutomationElement element)
+        {
+            object currentPattern;
+            if (!element.TryGetCurrentPattern(ValuePattern.Pattern, out currentPattern))
+            {
+                throw new Exception(string.Format("Element with AutomationId '{0}' and Name '{1}' does not support the ValuePattern.",
+                    element.Current.AutomationId, element.Current.Name));
+            }
+            return currentPattern as ValuePattern;
         }
 
         private string GetElementValue(AutomationElement element)
         {
-            string value = "";
+            StringBuilder value = new StringBuilder("SetValue ");
             ControlType type = GetElementType(element);
             if (type == ControlType.ListItem)
             {
                 AutomationElement parent = GetParentElement(element);
+                
+                ControlType ptype = GetElementType(parent);
+                if (ptype == ControlType.List)
+                {
+
+                    value.Append(GetCurrentElementInfo(parent));
+                    //AutomationElementCollection childCollection = parent.FindAll(TreeScope.Children,
+                    //    new AndCondition(new PropertyCondition(AutomationElement.IsControlElementProperty, true)));
+                    TreeWalker walker = new TreeWalker(new PropertyCondition(AutomationElement.IsControlElementProperty, true));
+                    AutomationElement elementNode = walker.GetFirstChild(parent);
+                    int handler = parent.Current.NativeWindowHandle;
+                    int i =0;
+                    while (elementNode != null)
+                    {
+                        if (GetElementType(elementNode)==ControlType.ListItem)
+                        {
+                            //string name = elementNode.Current.Name;
+                            StringBuilder text = new StringBuilder("",100);
+                            SendMessage(handler, LB_GETTEXT, i, text);
+                            value.Append(text).Append("|");
+                            i++;
+                        }
+                        
+                        elementNode = walker.GetNextSibling(elementNode);
+                    }
+                }
+            }
+            else if (type == ControlType.List)
+            {
+                value.Append(GetCurrentElementInfo(element));
+                //AutomationElementCollection childCollection = parent.FindAll(TreeScope.Children,
+                //    new AndCondition(new PropertyCondition(AutomationElement.IsControlElementProperty, true)));
+                TreeWalker walker = new TreeWalker(new PropertyCondition(AutomationElement.IsControlElementProperty, true));
+                AutomationElement elementNode = walker.GetFirstChild(element);
+                while (elementNode != null)
+                {
+                    //string name = GetElementName(elementNode);
+                    string name = elementNode.Current.Name;
+                    value.Append("Add ").Append(name).Append("|");
+                    elementNode = walker.GetNextSibling(elementNode);
+                }
+            }
+            else if (type == ControlType.Edit)
+            {
 
             }
-
-            return value;
+            value.Append("\"");
+            return value.ToString();
         }
 
         public AutomationElement GetParentElement(AutomationElement element)
@@ -1775,26 +1859,29 @@ namespace GlobalHooksTest
         {
             if (mouseMoveFlag)
             {
-                if (elementInfo != null || elementInfo != "")
+                if (elementInfo != null && elementInfo != "")
                 {
                     int offsetX = x - preX;
                     int offsetY = y - preY;
-                    if (Math.Abs(offsetX) > 3 && Math.Abs(offsetY) > 3)
+                    if (Math.Abs(offsetX) < 2 && Math.Abs(offsetY) < 2)
                     {
-                        SendMessage("Move " + elementInfo + offsetX + "\"" + offsetY + "\"");
+                        SendMessageBack("Click " + elementInfo);
                     }
                     else
                     {
-                        SendMessage("Click " + elementInfo);
+                        clickFlag = false;
+                        clickCount = 0;
+                        mouseDownFlag = false;
+                        timer.Stop();
+                        SendMessageBack("Move " + elementInfo + offsetX + "\"" + offsetY + "\"");
                     }
-                    
                     mouseMoveFlag = false;
                 }
 
             }
             else
             {
-                elementInfo = GetElementFromPoint(new Point(x, y));
+                //elementInfo = GetElementFromPoint(new Point(x, y));
 
                 if (elementInfo == null || elementInfo == "")
                 {
@@ -1805,7 +1892,8 @@ namespace GlobalHooksTest
                     if (mouseUpFlag)
                     {
                         mouseUpFlag = false;
-                        SendMessage("Click " + elementInfo);
+                        SendMessageBack("Click " + elementInfo);
+                        clickFlag = false;
                     }
                     else
                     {
@@ -1817,8 +1905,9 @@ namespace GlobalHooksTest
                     if (mouseUpFlag)
                     {
                         mouseUpFlag = false;
-                        SendMessage("MouseDown " + preInfo);
-                        SendMessage("MouseUp " + elementInfo);
+                        clickFlag = false;
+                        SendMessageBack("MouseDown " + preInfo);
+                        SendMessageBack("MouseUp " + elementInfo);
                     }
                     else
                     {
@@ -1830,7 +1919,7 @@ namespace GlobalHooksTest
             if (activateFlag)
             {
                 activateFlag = false;
-                SendMessage("Activate " + windowName);
+                SendMessageBack("Activate " + windowName);
                 windowName = "";
             }
         }
@@ -1859,30 +1948,22 @@ namespace GlobalHooksTest
             }
             if (preElement == currentElement)
             {
-                SendMessage("RightClick " + elementInfo);
+                SendMessageBack("RightClick " + elementInfo);
             }
 
             if (activateFlag)
             {
                 activateFlag = false;
-                SendMessage("Activate " + windowName);
+                SendMessageBack("Activate " + windowName);
                 windowName = "";
             }
         }
 
         public void MouseMoveAction(int x, int y)
         {
-//             int offsetX = Math.Abs(x - preX);
-//             int offsetY = Math.Abs(y - preY);
-//             SendMessage("X:" + offsetX + " Y:" + offsetY);
-//             if (offsetX>3&&offsetY>3)
-//             {
+
             mouseMoveFlag = true;
-            clickFlag = false;
-            clickCount = 0;
-            mouseDownFlag = false;
-            timer.Stop();
-           /* }*/
+            
             
         }
         
@@ -2014,11 +2095,11 @@ namespace GlobalHooksTest
                 thread.Start();
                 thread.Join();
 
-                SendMessage("SetFocus " + str);
+                SendMessageBack("SetFocus " + str);
             }
             if (keyDownFlag)
             {
-                SendMessage("KeyDown \"" + keyDown + "\"");
+                SendMessageBack("KeyDown \"" + keyDown + "\"");
             }
             keyDown = key;
             keyDownFlag = true;
@@ -2029,40 +2110,25 @@ namespace GlobalHooksTest
         {
             if (keyDownFlag && key == keyDown)
             {
-                SendMessage("SendKey \"" + keyDown + "\"");
+                SendMessageBack("SendKey \"" + keyDown + "\"");
             }
             else
             {
-                SendMessage("KeyUp \"" + key + "\"");
+                SendMessageBack("KeyUp \"" + key + "\"");
             }
             keyDownFlag = false;
         }
 
-//         public string GetKeysAction(string action, Keys key)
-//         {
-// //             string message = "";
-// //             if (action == "KeyDown")
-// //             {
-// //                 downKey = key;
-// //             }
-// //             else if (action == "KeyUp")
-// //             {
-// //                 if (downKey==key)
-// //                 {
-// //                     return "SendKey " + key;
-// //                 }
-// //             }
-// //             
-// //             return message;
-//         }
-
         private void OnSetTimer(object sender, System.Timers.ElapsedEventArgs e)
         {
+            if (mouseMoveFlag)
+            {
+            }
             if (clickCount==1)
             {
                 if (clickFlag)
                 {
-                    SendMessage("Click " + preInfo);
+                    SendMessageBack("Click " + preInfo);
                 }
                 else
                 {
@@ -2073,13 +2139,21 @@ namespace GlobalHooksTest
             {
                 if (clickFlag)
                 {
-                    SendMessage("DoubleClick " + preInfo);
+                    if (preElement == currentElement)
+                    {
+                        SendMessageBack("DoubleClick " + preInfo);
+                    }
+                    else
+                    {
+                        SendMessageBack("Click " + preInfo);
+                        SendMessageBack("Click " + elementInfo);
+                    }
                 }
             }
             if (activateFlag)
             {
                 activateFlag = false;
-                SendMessage("Activate " + windowName);
+                SendMessageBack("Activate " + windowName);
                 windowName = "";
             }
             clickFlag = false;

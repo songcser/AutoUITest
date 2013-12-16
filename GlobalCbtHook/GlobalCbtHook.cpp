@@ -225,7 +225,7 @@ static LRESULT CALLBACK MouseHookCallback(int code, WPARAM wparam, LPARAM lparam
 		if (msg != 0)
 			SendNotifyMessage(dstWnd, msg, wparam, lparam);
 	}
-
+	
 	return CallNextHookEx(hookMouse, code, wparam, lparam);
 }
 

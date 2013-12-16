@@ -49,6 +49,7 @@ namespace GlobalHooksTest
 
         private bool mouseDownFlag = false;
         private bool drawFlag = false;
+        private bool hookFlag = false;
         //private bool moveFristFlag = true;
         private Thread workerThread;
         private Button button2;
@@ -88,7 +89,7 @@ namespace GlobalHooksTest
             _GlobalHooks.GetMsg.GetMsg += new GlobalHooksTest.GlobalHooks.WndProcEventHandler(_GlobalHooks_GetMsg);
 
             elemManage = new ElementManage();
-            elemManage.SendMessage += new ElementManage.CallBackMessage(_GetMessage);
+            elemManage.SendMessageBack += new ElementManage.CallBackMessage(_GetMessage);
 
             //filePath = elemManage.GetUserPath();
             this.textBox2.Text = elemManage.GetUserPath();
@@ -272,69 +273,76 @@ namespace GlobalHooksTest
 			Application.Run(new Form1());
 		}
 
-		private void BtnInitCbt_Click(object sender, System.EventArgs e)
-		{
-            string time = elemManage.GetTime();
+        private void StartHook()
+        {
             _GlobalHooks.Shell.Start();
-            AddText("Start \"" + strPath + "\"");
-            elemManage.StartProcess(strPath);
-
-			_GlobalHooks.CBT.Start();
+            _GlobalHooks.CBT.Start();
             //AddText("CBT hook Adding");
             _GlobalHooks.MouseLL.Start();
             //AddText("MouseLL hook Adding");
             _GlobalHooks.KeyboardLL.Start();
+            elemManage.SetHookFlag(true);
+            hookFlag = true;
+        }
 
-            //_GlobalHooks.SysMsgFilter.Start();
+        private void StartHookEx()
+        {
+            _GlobalHooks.Shell.Start();
+            _GlobalHooks.CBT.Start();
+            //AddText("CBT hook Adding");
+            _GlobalHooks.MouseLL.Start();
+            //AddText("MouseLL hook Adding");
+            //_GlobalHooks.KeyboardLL.Start();
+            elemManage.SetHookFlag(true);
+            hookFlag = true;
+        }
+        
+        private void StopHook()
+        {
+            _GlobalHooks.Shell.Stop();
 
-            //_GlobalHooks.CallWndProc.Start();
+            _GlobalHooks.CBT.Stop();
+            //AddText("CBT hook Remove");
+            _GlobalHooks.MouseLL.Stop();
+            //AddText("MouseLL hook Remove");
+            _GlobalHooks.KeyboardLL.Stop();
+            elemManage.SetHookFlag(false);
+            hookFlag = false;
+        }
 
-           // _GlobalHooks.GetMsg.Start();
+        private void StopHookEx()
+        {
+            _GlobalHooks.Shell.Stop();
 
-            //elemManage.SubscribeToFocusChange();
+            _GlobalHooks.CBT.Stop();
+            //AddText("CBT hook Remove");
+            _GlobalHooks.MouseLL.Stop();
+            //AddText("MouseLL hook Remove");
+            //_GlobalHooks.KeyboardLL.Stop();
+            elemManage.SetHookFlag(false);
+            hookFlag = false;
+        }
 
-            //ThreadStart threadDelegate = new ThreadStart(StartUiaWorkerThread);
-            //workerThread = new Thread(threadDelegate);
-            //workerThread.Start();
-            //Thread thread = new Thread(() =>
-            //{
-                //SubscribeToMenu();
-            //});
-            //thread.Start();
-            //thread.Join();
+		private void BtnInitCbt_Click(object sender, System.EventArgs e)
+		{
+            string time = elemManage.GetTime();
+            
+            AddText("Start \"" + strPath + "\"");
+            elemManage.StartProcess(strPath);
+
+            StartHook();
+            
 
 		}
 
 		private void BtnUninitCbt_Click(object sender, System.EventArgs e)
 		{
-            _GlobalHooks.Shell.Stop();
-
-			_GlobalHooks.CBT.Stop();
-            //AddText("CBT hook Remove");
-            _GlobalHooks.MouseLL.Stop();
-            //AddText("MouseLL hook Remove");
-            _GlobalHooks.KeyboardLL.Stop();
-
-            //_GlobalHooks.SysMsgFilter.Stop();
-
-            //_GlobalHooks.CallWndProc.Stop();
-
-            
-
-            //_GlobalHooks.GetMsg.Stop();
-            //elemManage.UnsubscribeFocusChange();
             AddText("Stop");
-
+            StopHook();
             //stopFlag = false;
             //StringBuilder builder = elemManage.AnalysisStr();
             elemManage.WriteToFile(textBox2.Text);
             
-//             using (StreamWriter sw = File.CreateText(textBox2.Text))
-//             {
-// 
-//                 sw.Write(builder.ToString());
-// 
-//             }
 		}
 
 		private void BtnInitShell_Click(object sender, System.EventArgs e)
@@ -592,24 +600,28 @@ namespace GlobalHooksTest
             if (elemManage.isTopWindow())
             {
                 Keys key = e.KeyData;
-//                 if (key == Keys.F1)
-//                 {
-//                     ThreadStart threadDelegate = new ThreadStart(SetWaitListener);
-//                     workerThread = new Thread(threadDelegate);
-//                     workerThread.Start();
-//                 }
-//                 else if (key == Keys.F2)
-//                 {
-//                     //setValueFlag = true;
-//                 }
-                if (key == Keys.F1||key == Keys.F2)
+
+                if (key == Keys.F1)
                 {
                     drawFlag = true;
                 }
+                else if (key == Keys.F2)
+                {
+                    if (hookFlag)
+                    {
+                        StopHookEx();
+                    }
+                    else
+                    {
+                        StartHookEx();
+                    }
+                }
                 else
                 {
-                    elemManage.KeyDownAction(e.KeyData);
-
+                    if (hookFlag)
+                    {
+                        elemManage.KeyDownAction(e.KeyData);
+                    }
                 }
 
 
@@ -630,12 +642,16 @@ namespace GlobalHooksTest
                 }
                 else if (key == Keys.F2)
                 {
-                    drawFlag = false;
-                    elemManage.SetValueListener();
+                    //drawFlag = false;
+                    //elemManage.SetValueListener();
                 }
                 else
                 {
-                    elemManage.KeyUpAction(e.KeyData);
+                    if (hookFlag)
+                    {
+                        elemManage.KeyUpAction(e.KeyData);
+                    }
+                    
                 }
 
             }
