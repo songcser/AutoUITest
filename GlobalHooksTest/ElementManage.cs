@@ -46,7 +46,7 @@ namespace GlobalHooksTest
         //AutomationElement ElementSubscribeButton;
         //AutomationEventHandler UIAeventHandler;
         private System.Timers.Timer timer;
-        private Thread workerThread;
+        //private Thread workerThread;
         AutomationEventHandler menuOpenedHandler;
         AutomationEventHandler menuClosedHandler;
 
@@ -57,7 +57,7 @@ namespace GlobalHooksTest
         private AutomationElement preElement;
         private AutomationElement openedMenuElement;
         private AutomationElement focusElement;
-        private static AutomationElement drawElement;
+        //private static AutomationElement drawElement;
         private static string elementInfo;
         private static string preInfo;
         private static int clickCount = 0;
@@ -244,54 +244,18 @@ namespace GlobalHooksTest
 
         public void StartProcess(string strPath)
         {
+            if (strPath==""||strPath==null)
+            {
+                MessageBox.Show("please input application path");
+                throw new Exception("");
+                
+            }
             mainProcess = Process.Start(strPath);
             
-            //AutomationElement aeDeskTop = AutomationElement.RootElement;
-            Thread.Sleep(500);
-            //AutomationElement aeForm = null;
+//             Thread.Sleep(500);
+//             
+//             mainProcess.WaitForInputIdle();
             
-            //int times = 0;
-
-            //mainProcess.WaitForInputIdle();
-            //while (mainProcess.MainWindowHandle == null || mainProcess.MainWindowHandle == IntPtr.Zero)
-            //{
-            //    Thread.Sleep(200);
-            //    if (times > 5 && mainProcess.Handle != IntPtr.Zero)
-            //    {
-            //        break;
-            //    }
-            //    times++;
-
-            //}
-            //if (mainProcess.MainWindowHandle == IntPtr.Zero)
-            //{
-            //    EnumWindows(callBackEnumWindows, mainProcess.Id);
-            //}
-            //else
-            //{
-            //    elementList.Add(AutomationElement.FromHandle(mainProcess.MainWindowHandle));
-            //}
-
-            //Condition condition1 = new PropertyCondition(AutomationElement.IsControlElementProperty, true);
-            //Condition condition2 = new PropertyCondition(AutomationElement.IsEnabledProperty, true);
-            //Condition condition = new PropertyCondition(AutomationElement.ProcessIdProperty, mainProcess.Id);
-            ////AutomationElement aeForm = AutomationElement.FromHandle(process.MainWindowHandle);
-            
-            //using (fetchRequest.Activate())
-            //{
-            //    foreach (AutomationElement aeForm in elementList)
-            //    {
-            //        AutomationElementCollection tElemList = aeForm.FindAll(TreeScope.Subtree, new AndCondition(condition, condition1, condition2));
-            //        //elements = aeForm.FindAll(TreeScope.Subtree, new AndCondition(condition1, condition2, condition));
-            //        ///elements.CopyTo(temp, temp.Count);
-            //        for (int i = 0; i < tElemList.Count; i++)
-            //        {
-            //            childElemList.Add(tElemList[i]);
-            //        }
-            //    }
-            //    //WalkEnabledElements(aeDeskTop);
-
-            //}
             
         }
 
@@ -340,26 +304,21 @@ namespace GlobalHooksTest
         public string GetCurrentElementInfo(AutomationElement element)
         {
 
-            ControlType controlType = GetElementType(element);
+            //ControlType controlType = GetElementType(element);
+            AutomationElement parent = GetParentElement(element);
+            ControlType pt = GetElementType(parent);
+            if (pt == ControlType.ComboBox)
+            {
+                return GetCurrentElementInfo(parent);
+            }
             
 
             StringBuilder str = new StringBuilder("\"");
            
             str.Append(GetElementName(element)).Append("\"");
-            //string type = "";
-
-            
+           
             string type = element.Current.LocalizedControlType;
-            //if (controlType == ControlType.TreeItem)
-            //{
-            //    type = "tree item";
-            //}
-            //if (controlType == ControlType.Menu)
-            //{
-            //    type = "menu item";
-            //}
-
-            
+           
             str.Append(type).Append("\"");
 
             bool enable = element.Current.IsEnabled;
@@ -376,9 +335,9 @@ namespace GlobalHooksTest
 
             if (autoId=="")
             {
-                TreeWalker walker = TreeWalker.ControlViewWalker;
+                //TreeWalker walker = TreeWalker.ControlViewWalker;
                 
-                AutomationElement parent = walker.GetParent(element);
+                //AutomationElement parent = walker.GetParent(element);
                 if (parent!=null)
                 {
                     if (parent == AutomationElement.RootElement)
@@ -389,13 +348,13 @@ namespace GlobalHooksTest
                     {
                         str.Append(GetElementName(parent)).Append("\"");
                         ControlType ptype = GetElementType(parent);
-                        string pt = parent.Current.LocalizedControlType;
+                        string plct = parent.Current.LocalizedControlType;
                         if (ptype == ControlType.List)
                         {
-                            pt = "list";
+                            plct = "list";
                         }
-                        
-                        str.Append(pt).Append("\"");
+
+                        str.Append(plct).Append("\"");
                     }
                 }
             }
@@ -1700,15 +1659,16 @@ namespace GlobalHooksTest
                         }
                         else
                         {
-                            bool enable = element.Current.IsEnabled;
-                            if (enable)
-                            {
-                                message += GetCurrentElementInfo(element) + "true\"";
-                            }
-                            else
-                            {
-                                message += GetCurrentElementInfo(element) + "false\"";
-                            }
+                            //bool enable = element.Current.IsEnabled;
+                            //if (enable)
+                            //{
+                            //    message += GetCurrentElementInfo(element) + "true\"";
+                            //}
+                            //else
+                            //{
+                            //    message += GetCurrentElementInfo(element) + "false\"";
+                            //}
+                            message += GetCurrentElementInfo(element)+"\"";
                         }
                         
 

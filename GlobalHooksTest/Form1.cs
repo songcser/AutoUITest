@@ -52,6 +52,8 @@ namespace GlobalHooksTest
         private bool hookFlag = false;
         //private bool moveFristFlag = true;
         private Thread workerThread;
+        private GroupBox groupBox2;
+        private Label label3;
         private Button button2;
 
         //private AutomationEventHandler UIAEventHandler;
@@ -151,7 +153,10 @@ namespace GlobalHooksTest
             this.label2 = new System.Windows.Forms.Label();
             this.textBox2 = new System.Windows.Forms.TextBox();
             this.button2 = new System.Windows.Forms.Button();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.label3 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
+            this.groupBox2.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox1
@@ -166,16 +171,22 @@ namespace GlobalHooksTest
             // 
             // textBoxMessages
             // 
+            this.textBoxMessages.BackColor = System.Drawing.Color.White;
+            this.textBoxMessages.Cursor = System.Windows.Forms.Cursors.No;
+            this.textBoxMessages.ForeColor = System.Drawing.SystemColors.WindowText;
+            this.textBoxMessages.HideSelection = false;
             this.textBoxMessages.Location = new System.Drawing.Point(11, 19);
             this.textBoxMessages.Multiline = true;
             this.textBoxMessages.Name = "textBoxMessages";
+            this.textBoxMessages.ReadOnly = true;
             this.textBoxMessages.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.textBoxMessages.Size = new System.Drawing.Size(557, 238);
-            this.textBoxMessages.TabIndex = 3;
+            this.textBoxMessages.TabIndex = 7;
             // 
             // BtnUninitCbt
             // 
-            this.BtnUninitCbt.Location = new System.Drawing.Point(444, 83);
+            this.BtnUninitCbt.Enabled = false;
+            this.BtnUninitCbt.Location = new System.Drawing.Point(155, 76);
             this.BtnUninitCbt.Name = "BtnUninitCbt";
             this.BtnUninitCbt.Size = new System.Drawing.Size(128, 32);
             this.BtnUninitCbt.TabIndex = 2;
@@ -184,7 +195,7 @@ namespace GlobalHooksTest
             // 
             // BtnInitCbt
             // 
-            this.BtnInitCbt.Location = new System.Drawing.Point(287, 82);
+            this.BtnInitCbt.Location = new System.Drawing.Point(15, 76);
             this.BtnInitCbt.Name = "BtnInitCbt";
             this.BtnInitCbt.Size = new System.Drawing.Size(134, 32);
             this.BtnInitCbt.TabIndex = 1;
@@ -244,10 +255,32 @@ namespace GlobalHooksTest
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.label3);
+            this.groupBox2.Location = new System.Drawing.Point(328, 76);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(244, 32);
+            this.groupBox2.TabIndex = 11;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "注意";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.ForeColor = System.Drawing.Color.Red;
+            this.label3.Location = new System.Drawing.Point(46, 13);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(166, 13);
+            this.label3.TabIndex = 0;
+            this.label3.Text = "F1,F2键被屏蔽，用于测试软件";
+            this.label3.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            // 
             // Form1
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(605, 390);
+            this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.textBox2);
             this.Controls.Add(this.label2);
@@ -258,9 +291,11 @@ namespace GlobalHooksTest
             this.Controls.Add(this.BtnInitCbt);
             this.Controls.Add(this.groupBox1);
             this.Name = "Form1";
-            this.Text = "AutoUI Record";
+            this.Text = "FunAuto Record";
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -283,6 +318,8 @@ namespace GlobalHooksTest
             _GlobalHooks.KeyboardLL.Start();
             elemManage.SetHookFlag(true);
             hookFlag = true;
+            BtnInitCbt.Enabled = false;
+            BtnUninitCbt.Enabled = true;
         }
 
         private void StartHookEx()
@@ -295,6 +332,8 @@ namespace GlobalHooksTest
             //_GlobalHooks.KeyboardLL.Start();
             elemManage.SetHookFlag(true);
             hookFlag = true;
+            BtnInitCbt.Enabled = false;
+            BtnUninitCbt.Enabled = true;
         }
         
         private void StopHook()
@@ -308,6 +347,8 @@ namespace GlobalHooksTest
             _GlobalHooks.KeyboardLL.Stop();
             elemManage.SetHookFlag(false);
             hookFlag = false;
+            BtnInitCbt.Enabled = true;
+            BtnUninitCbt.Enabled = false;
         }
 
         private void StopHookEx()
@@ -321,15 +362,24 @@ namespace GlobalHooksTest
             //_GlobalHooks.KeyboardLL.Stop();
             elemManage.SetHookFlag(false);
             hookFlag = false;
+            BtnInitCbt.Enabled = true;
+            BtnUninitCbt.Enabled = false;
         }
 
 		private void BtnInitCbt_Click(object sender, System.EventArgs e)
 		{
-            string time = elemManage.GetTime();
+            //string time = elemManage.GetTime();
             
-            AddText("Start \"" + strPath + "\"");
-            elemManage.StartProcess(strPath);
-
+            try
+            {
+                elemManage.StartProcess(strPath);
+                AddText("Start \"" + strPath + "\"");
+            }
+            catch (System.Exception ex)
+            {
+                return;
+            }
+            
             StartHook();
             
 

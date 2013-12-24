@@ -87,6 +87,11 @@ namespace AutoUIPlayback
         private static extern bool EnumWindows(EnumThreadWindowsCallback callback, IntPtr extraData);
         [DllImport("user32.dll", ExactSpelling = true)]
         private static extern bool EnumChildWindows(HandleRef hwndParent, EnumChildrenCallback lpEnumFunc, HandleRef lParam);
+        [DllImport("user32.dll")]
+        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
+        [DllImport("User32.dll")]
+        public static extern IntPtr GetTopWindow(IntPtr Phwnd);
+
         private delegate bool EnumThreadWindowsCallback(IntPtr hWnd, IntPtr lParam);
         private delegate bool EnumChildrenCallback(IntPtr hwnd, IntPtr lParam);
 
@@ -123,16 +128,23 @@ namespace AutoUIPlayback
         //public static int WM_RBUTTONDBLCLK = 0x206; 
         #endregion
 
-        private static AutomationElement mainWindow = null;
+        public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);    //窗体置顶
+        public static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);    //取消窗体置顶
+        public const uint SWP_NOMOVE = 0x0002;    //不调整窗体位置
+        public const uint SWP_NOSIZE = 0x0001;    //不调整窗体大小
+
+        private AutomationElement mainWindow = null;
         private static IntPtr mainHandle = IntPtr.Zero;
         private static bool isClear = false;
  //       private static AutomationElement valueElement = null;
         private static List<IntPtr> windowHandle;
         private static CacheRequest cacheRequest = null;
-        AutomationElementCollection elementCollection;
-        List<AutomationElementCollection> collectionList;
+        ElementList elementCollection;
+        List<ElementList> collectionList;
+        //ElementList elementList;
+        
 
-        private static bool SyncFlag = true;
+        private static int SyncFlag = 0;
         private int dcTime = 0;
         private string tname;
         private string ttype;
@@ -141,7 +153,7 @@ namespace AutoUIPlayback
         private string tpname;
         private string tptype;
         private AutomationElement targetElement;
-        private bool anyFlag = false;
+        //private bool anyFlag = false;
         //public AutomationElement MainWindow
         //{
         //    get { return mainWindow; }
@@ -153,19 +165,20 @@ namespace AutoUIPlayback
             windowHandle = new List<IntPtr>();
 
             cacheRequest = new CacheRequest();
-            cacheRequest.Add(AutomationElement.NameProperty);
-            cacheRequest.Add(AutomationElement.IsEnabledProperty);
-            cacheRequest.Add(AutomationElement.ControlTypeProperty);
-            cacheRequest.Add(AutomationElement.AutomationIdProperty);
-            cacheRequest.Add(AutomationElement.IsControlElementProperty);
-            cacheRequest.Add(AutomationElement.LocalizedControlTypeProperty);
+//             cacheRequest.Add(AutomationElement.NameProperty);
+//             cacheRequest.Add(AutomationElement.IsEnabledProperty);
+//             cacheRequest.Add(AutomationElement.ControlTypeProperty);
+//             cacheRequest.Add(AutomationElement.AutomationIdProperty);
+//             cacheRequest.Add(AutomationElement.IsControlElementProperty);
+//             cacheRequest.Add(AutomationElement.LocalizedControlTypeProperty);
 //             cacheRequest.Add(SelectionItemPattern.Pattern);
 //             cacheRequest.Add(InvokePattern.Pattern);
 //             cacheRequest.Add(ExpandCollapsePattern.Pattern);
 //             cacheRequest.Add(ValuePattern.Pattern);
 //             cacheRequest.Add(TogglePattern.Pattern);
 
-            collectionList = new List<AutomationElementCollection>();
+            collectionList = new List<ElementList>();
+            elementCollection = new ElementList();
             //if (dcTime>300)
             //{
             //    dcTime = GetDoubleClickTime() - 300;
@@ -201,7 +214,7 @@ namespace AutoUIPlayback
             }
             else if ("Click " == strList[0])
             {
-                //Thread.Sleep(500);
+                //Thread.Sleep(100);
                 #region MyRegion
                 if (strList.Count == 8)
                 {
@@ -338,11 +351,11 @@ namespace AutoUIPlayback
             {
                 if (strList.Count == 9)
                 {
-                    WaitControl(strList[1], strList[2], bool.Parse(strList[3]), strList[4], strList[5]);
+                    WaitControl(strList[1], strList[2], bool.Parse(strList[3]), strList[4], strList[8]);
                 }
                 else if (strList.Count == 10)
                 {
-                    WaitControl(strList[1], strList[2], bool.Parse(strList[3]), strList[4], strList[5], strList[7]);
+                    WaitControl(strList[1], strList[2], bool.Parse(strList[3]), strList[4], strList[5], strList[9]);
                 }
                 else
                 {
@@ -385,60 +398,118 @@ namespace AutoUIPlayback
             int i = 0;
             for (; i < collectionList.Count;i++ )
             {
-                if (collectionList[i]==elementCollection)
+                if (collectionList[i].Equals(elementCollection))
                 {
                     break;
                 }
             }
-
-            using (cacheRequest.Activate())
+            if (i==collectionList.Count)
             {
-                elementCollection = mainWindow.FindAll(TreeScope.Subtree, new AndCondition(condition1, condition2));
+                return;
             }
+            elementCollection.Clear();
+            ElementList collection = new ElementList();
+            CacheElement(mainWindow, new AndCondition(condition1, condition2), collection);
+            elementCollection.CopyFrom(collection);
 
-            collectionList[i] = elementCollection;
+            //using (cacheRequest.Activate())
+            //{
+//                 AutomationElementCollection collection = mainWindow.FindAll(TreeScope.Subtree, new AndCondition(condition1, condition2));
+//                 collectionList[i] = elementCollection;
+            //}
+            collectionList[i].Clear();
+
+            collection.CopyTo(collectionList[i]);
+            
+            
+        }
+
+        private void CacheElement(AutomationElement rootElement, Condition condition,ElementList collection)
+        {
+            TreeWalker walker = new TreeWalker(condition);
+            AutomationElement elementNode = walker.GetFirstChild(rootElement);
+            
+            while (elementNode != null)
+            {
+                collection.Add(elementNode);
+                //Console.WriteLine("Count: "+collection.Count);
+                if (elementNode.Current.LocalizedControlType != "image")
+                {
+                    CacheElement(elementNode, condition, collection);
+                    
+                }
+                //
+                elementNode = walker.GetNextSibling(elementNode);
+               
+            }
         }
 
         private void StartCache(IntPtr handle)
         {
-            bool flag = true;
-            for (int i = 0; i < windowHandle.Count; i++)
+            //Console.WriteLine("Start Cache"+SyncFlag);
+            Thread thread = new Thread(() =>
             {
-                if (windowHandle[i] == handle)
+                while (SyncFlag > 0)
                 {
-                    elementCollection = null;
-                    elementCollection = collectionList[i];
-                    flag = false;
+                    Thread.Sleep(10);
                 }
-            }
-            if (flag)
-            {
-
-                Condition condition1 = new PropertyCondition(AutomationElement.IsControlElementProperty, true);
-                Condition condition2 = new PropertyCondition(AutomationElement.IsEnabledProperty, true);
-                //Condition condition3 = new NotCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Image));
-                SyncFlag = false;
-                Thread thread = new Thread(() =>
+                SyncFlag ++;
+                bool flag = true;
+                for (int i = 0; i < windowHandle.Count; i++)
                 {
-                    using (cacheRequest.Activate())
+                    if (windowHandle[i] == handle)
                     {
-                        try
-                        {
-                            elementCollection = mainWindow.FindAll(TreeScope.Descendants, new AndCondition(condition1, condition2));
-                        }
-                        catch (System.Exception ex)
-                        {
-
-                        }
-
+                        elementCollection.Clear();
+                        elementCollection.CopyFrom(collectionList[i]);
+                        //Console.WriteLine("CopyForm");
+                        flag = false;
                     }
-                    windowHandle.Add(handle);
-                    collectionList.Add(elementCollection);
-                    SyncFlag = true;
-                });
-                thread.Start();
-                //thread.Join();
-            }
+                }
+                if (flag)
+                {
+
+                    Condition condition1 = new PropertyCondition(AutomationElement.IsControlElementProperty, true);
+                    Condition condition2 = new PropertyCondition(AutomationElement.IsEnabledProperty, true);
+                    
+                    try
+                    {
+                        elementCollection.Clear();
+                        ElementList collection = new ElementList();
+                        //Console.WriteLine("Thread: " + mainWindow.Current.Name);
+                        CacheElement(mainWindow, new AndCondition(condition1, condition2), collection);
+                        collectionList.Add(collection);
+                        //Console.WriteLine("Count: " + collectionList.Count);
+                        windowHandle.Add(handle);
+                        elementCollection.CopyFrom(collection);
+                        
+                        //Console.WriteLine("Thread: " + mainWindow.Current.Name);
+//                             Console.WriteLine("Handle: "+handle);
+//                             IntPtr topHandler = GetTopWindow((IntPtr)null);
+//                             int count =0;
+//                             while (topHandler != handle)
+//                             {
+//                            
+//                                 Thread.Sleep(50);
+//                             
+//                                 if (count>100)
+//                                 {
+//                                     break;
+//                                 }
+//                                 count++;
+//                                 topHandler = GetTopWindow((IntPtr)null);
+//                             }
+                        //elementCollection = mainWindow.FindAll(TreeScope.Descendants, new AndCondition(condition1, condition2));
+                    }
+                    catch (System.Exception ex)
+                    {
+                        //Console.WriteLine("Exception: " + ex.Message);
+                    }
+
+                     
+                }
+                SyncFlag--;
+            });
+            thread.Start();
         }
         
         public void ActivateWindow(string name, string type)
@@ -451,17 +522,41 @@ namespace AutoUIPlayback
             {
                 handle = FindWindow(null, name);
                 Thread.Sleep(50);
-                if (count>1200*2)
+                if (count>1200)
                 {
                     return;
                 }
                 count++;
             }
-
-            mainHandle = handle;
-            mainWindow = AutomationElement.FromHandle(handle);
-
-            StartCache(handle);
+            int processid = 0;
+            GetWindowThreadProcessId(handle, ref processid);
+            if (processid != process.Id)
+            {
+                bool pflag = true;
+                for (int i = 0; i < pid.Count; i++)
+                {
+                    if (pid[i] == processid)
+                    {
+                        pflag = false;
+                    }
+                }
+                if (pflag)
+                {
+                    pid.Add(processid);
+                }
+            }
+            if (mainHandle!=handle)
+            {
+                mainHandle = handle;
+                mainWindow = AutomationElement.FromHandle(handle);
+                StartCache(handle);
+            }
+            
+            //IntPtr topHandler = GetTopWindow((IntPtr)null);
+            //Console.WriteLine("Top: " + topHandler + "   handle: " + handle);
+            //Console.WriteLine("Activate: "+name);
+            //SetWindowPos(handle, HWND_TOPMOST, 1, 1, 1, 1, SWP_NOMOVE | SWP_NOSIZE);
+            
             #region MyRegion
             //Condition cond1 = new PropertyCondition(AutomationElement.IsEnabledProperty, true);
             //Condition cond2 = new PropertyCondition(AutomationElement.NameProperty, name);
@@ -530,15 +625,38 @@ namespace AutoUIPlayback
         {
             if (name == "")
             {
-                AutomationElement element = FindElement(name, type,flag, pname, ptype);
-                if (element != null)
-                {
-                    mainWindow = element;
-                   
-                }
-                return;
+//                 SyncFlag = false;
+//                 Thread thread = new Thread(() =>
+//                 {
+//                     using (cacheRequest.Activate())
+//                     {
+//                         try
+//                         {
+//                             AutomationElement element = FindElement(name, type, flag, pname, ptype);
+//                             if (element != null)
+//                             {
+//                                 mainWindow = element;
+// 
+//                             }
+//                         }
+//                         catch (System.Exception ex)
+//                         {
+// 
+//                         }
+// 
+//                     }
+//                     
+//                     SyncFlag = true;
+//                 });
+//                 thread.Start();
+//                 
+                
             }
-            ActivateWindow(name, type);
+            else
+            {
+                ActivateWindow(name, type);
+            }
+            
         }
 
         public void WaitWindow(string name)
@@ -561,11 +679,16 @@ namespace AutoUIPlayback
  
 	#endregion
             IntPtr handle = FindWindow(null, name);
-
+            int count = 0;
             while (handle == IntPtr.Zero || handle == null)
             {
                 handle = FindWindow(null, name);
                 Thread.Sleep(50);
+                if (count > 1200)
+                {
+                    return;
+                }
+                count++;
             }
 
             int processid = 0;
@@ -599,10 +722,9 @@ namespace AutoUIPlayback
             {
                 try
                 {
-                    bool enable = false;
                     if (message == "")
                     {
-                        AutomationElement element = FindCurrentElement(name, type, autoId, enable);
+                        AutomationElement element = FindCurrentElement(name, type, autoId, flag);
 
                         if (element != null)
                         {
@@ -611,7 +733,7 @@ namespace AutoUIPlayback
                     }
                     else
                     {
-                        AutomationElement element = FindElement(name, type,flag, autoId);
+                        AutomationElement element = FindCurrentElement(name, type, autoId, flag);
                         ControlType t = element.Current.ControlType;
                         if (t == ControlType.Edit)
                         {
@@ -640,7 +762,6 @@ namespace AutoUIPlayback
             {
                 try
                 {
-                    bool enable = false;
                     if (message == "")
                     {
                         AutomationElement element = FindCurrentElement(name, type,flag, pname,ptype);
@@ -812,9 +933,12 @@ namespace AutoUIPlayback
             
             if (element == null)
             {
-                return; 
+                element = FindElement(name, type, flag, autoId);
+                if (element == null)
+                {
+                    return;
+                }
             }
-            
             try
             {
                 AnalysisType(element,offsetX,offsetY);
@@ -822,7 +946,7 @@ namespace AutoUIPlayback
             catch (System.Exception ex)
             {
                 string str = ex.Message;
-                //AutomationElement elem = FindCurrentElement(name, type, autoId,true);
+                element = FindCurrentElement(name, type, autoId, true);
                 if (element != null)
                 {
                     System.Windows.Rect rect = element.Current.BoundingRectangle;
@@ -837,7 +961,7 @@ namespace AutoUIPlayback
                     SetCursorPos(x, y);
 
                     mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
-                    //Thread.Sleep(50);
+                    Thread.Sleep(20);
                     mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
                 }
             }
@@ -888,7 +1012,11 @@ namespace AutoUIPlayback
             
             if (element == null)
             {
-                return;    
+                element = FindElement(name, type, flag, pname, ptype);
+                if (element == null)
+                {
+                    return;
+                }   
             }
             
             try
@@ -916,7 +1044,7 @@ namespace AutoUIPlayback
                     SetCursorPos(x, y);
 
                     mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
-
+                    Thread.Sleep(20);
                     mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
                 }
             }
@@ -929,10 +1057,11 @@ namespace AutoUIPlayback
 
             if (element == null)
             {
-
-                throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
-
-                    element.Current.AutomationId, element.Current.Name));
+                element = FindElement(name, type, flag, autoId);
+                if (element == null)
+                {
+                    return;
+                }
 
             }
             Rect rect = element.Current.BoundingRectangle;
@@ -1005,10 +1134,12 @@ namespace AutoUIPlayback
 
             if (element == null)
             {
-                return;
-                throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
-
-                    element.Current.AutomationId, element.Current.Name));
+                element = FindElement(name, type, flag, pname, ptype);
+                if (element == null)
+                {
+                    return;
+                }
+                
             }
 
             Rect rect = element.Current.BoundingRectangle;
@@ -1036,7 +1167,11 @@ namespace AutoUIPlayback
 
             if (element == null)
             {
-                return;
+                element = FindElement(name, type, flag, autoId);
+                if (element == null)
+                {
+                    return;
+                }
                 //throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
 
                 //    element.Current.AutomationId, element.Current.Name));
@@ -1100,10 +1235,11 @@ namespace AutoUIPlayback
 
             if (element == null)
             {
-                return;
-                throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
-
-                    element.Current.AutomationId, element.Current.Name));
+                element = FindElement(name, type, flag, pname, ptype);
+                if (element == null)
+                {
+                    return;
+                }
             }
             Rect rect = element.Current.BoundingRectangle;
 
@@ -1141,7 +1277,11 @@ namespace AutoUIPlayback
             AutomationElement element = FindElement(name, type,flag, autoId);
             if (element == null)
             {
-                return;
+                element = FindElement(name, type, flag, autoId);
+                if (element == null)
+                {
+                    return;
+                }
             }
             Rect rect = element.Current.BoundingRectangle;
             int IncrementX = (int)rect.X + offsetX;
@@ -1157,7 +1297,11 @@ namespace AutoUIPlayback
             AutomationElement element = FindElement(name, type,flag, pname,ptype);
             if (element == null)
             {
-                return;
+                element = FindElement(name, type, flag, pname, ptype);
+                if (element == null)
+                {
+                    return;
+                }
             }
             Rect rect = element.Current.BoundingRectangle;
             int IncrementX = (int)rect.X + offsetX;
@@ -1174,7 +1318,11 @@ namespace AutoUIPlayback
             AutomationElement element = FindElement(name, type,flag, autoId);
             if (element==null)
             {
-                return;
+                element = FindElement(name, type, flag, autoId);
+                if (element == null)
+                {
+                    return;
+                }
             }
             int handler = element.Current.NativeWindowHandle;
 
@@ -1192,7 +1340,11 @@ namespace AutoUIPlayback
             AutomationElement element = FindElement(name, type,flag, pname, ptype);
             if (element == null)
             {
-                return;
+                element = FindElement(name, type, flag, pname, ptype);
+                if (element == null)
+                {
+                    return;
+                }
             }
             ControlType ctype = element.Current.ControlType;
             if (ctype == ControlType.List)
@@ -1213,7 +1365,7 @@ namespace AutoUIPlayback
         {
             ControlType type = element.Current.ControlType;
             
-            if (type == ControlType.RadioButton||type == ControlType.ListItem)
+            if (type == ControlType.RadioButton)
             {
                 SelectionItemPattern selectionItemPattern = GetSelectionItemPattern(element);
                 selectionItemPattern.Select();
@@ -1232,12 +1384,6 @@ namespace AutoUIPlayback
             {
                 ExpandCollapsePattern currentPattern = GetExpandCollapsePattern(element);
                 currentPattern.Expand();
-            }
-            else if (type == ControlType.MenuItem)
-            {
-                ExpandCollapsePattern pattern = element.GetCurrentPattern(ExpandCollapsePattern.Pattern) as ExpandCollapsePattern;
-                pattern.Expand();
-               
             }
             else if (type == ControlType.TreeItem)
             {
@@ -1262,42 +1408,60 @@ namespace AutoUIPlayback
 
                 //= ExpandCollapseState.LeafNode;
             }
-//            else if (type == ControlType.Edit)
-//            {
-//                //element.SetFocus();
-//                //if (isClear)
-//                //{
-////                     ValuePattern currentPattern = GetValuePattern(element);
-////                     currentPattern.SetValue("");
-//                //}
-//                //Thread.Sleep(100);
-//            }
             else if (type == ControlType.CheckBox)
             {
                 TogglePattern togglePattern = GetTogglePattern(element);
                 togglePattern.Toggle();
             }
+            else if (type == ControlType.ListItem)
+            {
+                #region MyRegion
+                AutomationElement parent = GetParentElement(element);
+                ControlType pt = parent.Current.ControlType;
+                if (pt == ControlType.List)
+                {
+                    parent = GetParentElement(parent);
+                    pt = parent.Current.ControlType;
+                    if (pt == ControlType.ComboBox)
+                    {
+                        SelectionItemPattern selectionItemPattern = GetSelectionItemPattern(element);
+                        selectionItemPattern.Select();
+                    }
+                    else
+                    {
+                        ClickElement(element, offsetX, offsetY);
+                    }
+                }
+                else
+                {
+                    ClickElement(element, offsetX, offsetY);
+                } 
+                #endregion
+            }
             else
             {
-
-                System.Windows.Rect rect = element.Current.BoundingRectangle;
-                int x = (int)rect.X + offsetX;
-                int y = (int)rect.Y + offsetY;
-                if (offsetX == 0 && offsetY == 0)
-                {
-                    Point point = element.GetClickablePoint();
-                    x = (int)point.X;
-                    y = (int)point.Y;
-                }
-                SetCursorPos(x, y);
-
-                mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
-
-                mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
-                
+                ClickElement(element, offsetX, offsetY);
             }
         }
+        
+        private void ClickElement(AutomationElement element, int offsetX, int offsetY)
+        {
+            System.Windows.Rect rect = element.Current.BoundingRectangle;
+            int x = (int)rect.X + offsetX;
+            int y = (int)rect.Y + offsetY;
+            if (offsetX == 0 && offsetY == 0)
+            {
+                Point point = element.GetClickablePoint();
+                x = (int)point.X;
+                y = (int)point.Y;
+            }
+            SetCursorPos(x, y);
 
+            mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, UIntPtr.Zero);
+            Thread.Sleep(20);
+            mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, UIntPtr.Zero);
+        }
+        
         public static TogglePattern GetTogglePattern(AutomationElement element)
         {
             object currentPattern;
@@ -1393,14 +1557,24 @@ namespace AutoUIPlayback
 
             if (element == null)
             {
-
-                throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
-
-                    element.Current.AutomationId, element.Current.Name));
-
+                element = FindElement(name, type, flag, autoId);
+                if (element == null)
+                {
+                    return;
+                }
+                
             }
-
-            element.SetFocus();
+            try
+            {
+                element.SetFocus();
+                ValuePattern currentPattern = GetValuePattern(element);
+                currentPattern.SetValue("");
+            }
+            catch (System.Exception ex)
+            {
+            	
+            }
+            
         }
 
         public void SetFocus(string name, string type,bool flag, string pname,string ptype)
@@ -1409,14 +1583,27 @@ namespace AutoUIPlayback
 
             if (element == null)
             {
-
-                throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
-
-                    element.Current.AutomationId, element.Current.Name));
+                element = FindElement(name, type, flag, pname, ptype);
+                if (element == null)
+                {
+                    return;
+                }
+//                 throw new NullReferenceException(string.Format("Element with AutomationId '{0}' and Name '{1}' can not be find.",
+// 
+//                     element.Current.AutomationId, element.Current.Name));
 
             }
-
-            element.SetFocus();
+            try
+            {
+                element.SetFocus();
+                ValuePattern currentPattern = GetValuePattern(element);
+                currentPattern.SetValue("");
+            }
+            catch (System.Exception ex)
+            {
+            	
+            }
+            
         }
 
         public AutomationElement FindWindowByProcessId(int processId)
@@ -1468,36 +1655,45 @@ namespace AutoUIPlayback
         {
             
             int count = 0;
-            while (!SyncFlag)
+            while (SyncFlag>0)
             {
-                Thread.Sleep(500);
-                if (count > 10)
-                {
-                    SyncFlag = true;
-                    AutomationElement elem = WalkEnabledElements(mainWindow, name, type, autoId, flag);
-//                     AutomationElement elem = FindCurrentElement(name, type, autoId);
-                    if (elem != null)
-                    {
-                        return elem;
-                    }
-                }
-                count++;
+                 Thread.Sleep(100);
+                 if (count > 1000)
+                 {
+                     break;
+                     #region MyRegion
+                     //                     SyncFlag = true;
+                     //                     AutomationElement elem = WalkEnabledElements(mainWindow, name, type, autoId, flag);
+                     // //                     AutomationElement elem = FindCurrentElement(name, type, autoId);
+                     //                     if (elem != null)
+                     //                     {
+                     //                         return elem;
+                     //                     } 
+                     #endregion
+                 }
+                 count++;
             }
-            
+
             AutomationElement element = FindCachedElement(name, type,flag, autoId);
             if (element!=null)
             {
                 return element;
             }
-            
+            //Console.WriteLine("no find from cache");
             UpdateCache();
+            //Console.WriteLine("UpdateCache");
             element = FindCachedElement(name, type,flag, autoId);
             
             if (element != null)
             {
                 return element;
             }
-
+            element = FindCachedElementEx(name, type, flag, autoId);
+            if (element != null)
+            {
+                return element;
+            }
+            //Console.WriteLine("no find again from cache");
             //element = FindElementFromDesktop(name, type, autoId, true);
             tname = name;
             ttype = type;
@@ -1511,8 +1707,10 @@ namespace AutoUIPlayback
             targetElement = null;
             if (element!=null)
             {
+                elementCollection.Add(element);
                 return element;
             }
+            //Console.WriteLine("no find from handle");
             return null;
             #region MyRegion
             ////AutomationElement aeForm = FindWindowByProcessId(processId);
@@ -1575,17 +1773,42 @@ namespace AutoUIPlayback
         
         public AutomationElement FindCachedElement(string name, string type,bool flag, string autoId)
         {
-            int count = 0;
-            while (true)
+            
+            for (int i = 0; i < elementCollection.Count; i++)
+            {
+                try
+                {
+                    AutomationElement targetElem = elementCollection.GetElement(i);
+
+                    if (targetElem != null && name == targetElem.Current.Name && type == targetElem.Current.LocalizedControlType
+                        && autoId == targetElem.Current.AutomationId && flag == targetElem.Current.IsEnabled)
+                    {
+                        return targetElem;
+                    }
+
+                }
+                catch (System.Exception ex)
+                {
+
+                }
+                    
+            }
+            return null;
+        }
+
+        public AutomationElement FindCachedElementEx(string name, string type, bool flag, string autoId)
+        {
+            int id = -1;
+            Int32.TryParse(autoId, out id);
+            if (id != -1 && id != 0)
             {
                 for (int i = 0; i < elementCollection.Count; i++)
                 {
                     try
                     {
-                        AutomationElement targetElem = elementCollection[i];
+                        AutomationElement targetElem = elementCollection.GetElement(i);
 
-                        if (targetElem != null && name == targetElem.Current.Name && type == targetElem.Current.LocalizedControlType
-                            && autoId == targetElem.Current.AutomationId && flag == targetElem.Current.IsEnabled)
+                        if (targetElem != null && name == targetElem.Current.Name && type == targetElem.Current.LocalizedControlType && flag == targetElem.Current.IsEnabled)
                         {
                             return targetElem;
                         }
@@ -1595,62 +1818,8 @@ namespace AutoUIPlayback
                     {
 
                     }
-                    
+
                 }
-                int id = -1;
-                Int32.TryParse(autoId,out id);
-                if (id!=-1)
-                {
-                    for (int i = 0; i < elementCollection.Count; i++)
-                    {
-                        try
-                        {
-                            AutomationElement targetElem = elementCollection[i];
-
-                            if (targetElem != null && name == targetElem.Current.Name && type == targetElem.Current.LocalizedControlType && flag == targetElem.Current.IsEnabled)
-                            {
-                                return targetElem;
-                            }
-
-                        }
-                        catch (System.Exception ex)
-                        {
-
-                        }
-
-                    }
-                }
-
-                #region MyRegion
-                //for (int i = 0; i < collectionList.Count;i++ )
-                //{
-                //    AutomationElementCollection collection = collectionList[i];
-                //    for (int j = 0; j < collection.Count; j++)
-                //    {
-                //        try
-                //        {
-                //            AutomationElement targetElem = elementCollection[j];
-
-                //            if (targetElem != null && name == targetElem.Cached.Name && type == targetElem.Cached.LocalizedControlType && autoId == targetElem.Cached.AutomationId)
-                //            {
-                //                return targetElem;
-                //            }
-
-                //        }
-                //        catch (System.Exception ex)
-                //        {
-
-                //        }
-                //    }
-                //} 
-                #endregion
-                if (count > 10)
-                {
-                    break;
-                }
-                Thread.Sleep(200);
-                count++;
-                
             }
             return null;
         }
@@ -1821,20 +1990,23 @@ namespace AutoUIPlayback
         public AutomationElement FindElement(string name, string type,bool flag, string pname, string ptype)
         {
             int count = 0;
-            while (!SyncFlag)
+            while (SyncFlag>0)
             {
-                Thread.Sleep(500);
-                if (count > 10)
-                {
-                    SyncFlag = true;
-                    AutomationElement elem = WalkEnabledElements(mainWindow, name, type, flag, pname, ptype);
-                    //                     AutomationElement elem = FindCurrentElement(name, type, autoId);
-                    if (elem != null)
-                    {
-                        return elem;
-                    }
-                }
-                count++;
+                 Thread.Sleep(100);
+                 if (count > 1000)
+                 {
+                     break;
+                     #region MyRegion
+                     //                     SyncFlag = true;
+                     //                     AutomationElement elem = WalkEnabledElements(mainWindow, name, type, flag, pname, ptype);
+                     //                     //                     AutomationElement elem = FindCurrentElement(name, type, autoId);
+                     //                     if (elem != null)
+                     //                     {
+                     //                         return elem;
+                     //                     } 
+                     #endregion
+                 }
+                 count++;
             }
             #region MyRegion
             //TreeWalker walker = TreeWalker.ControlViewWalker;
@@ -1873,15 +2045,18 @@ namespace AutoUIPlayback
             {
                 return element;
             }
+            //Console.WriteLine("not find from cache");
             
             UpdateCache();
+            //Console.WriteLine("UpdateCache");
             element = FindCachedElement(name, type, flag, pname, ptype);
             
             if (element != null)
             {
                 return element;
             }
-//          
+            //Console.WriteLine("not find again from cache");
+//          Console.WriteLine()
             #region MyRegion
             //AutomationElementCollection collection = FindElements(name, type);
             //if (collection == null)
@@ -1933,9 +2108,10 @@ namespace AutoUIPlayback
             targetElement = null;
             if (element != null)
             {
+                elementCollection.Add(element);
                 return element;
             }
-
+            //Console.WriteLine("not find form handle");
             #region MyRegion
             //AutomationElement pelem = AutomationElement.FromHandle(mainHandle);
             //if (pelem != null)
@@ -1977,7 +2153,7 @@ namespace AutoUIPlayback
             TreeWalker walker = TreeWalker.ControlViewWalker;
             for (int i = 0; i < elementCollection.Count; i++)
             {
-                AutomationElement element = elementCollection[i];
+                AutomationElement element = elementCollection.GetElement(i);
                 if (element != null)
                 {
                     try
@@ -2002,39 +2178,6 @@ namespace AutoUIPlayback
 
                 }
             }
-            #region MyRegion
-            //for (int i = 0; i < collectionList.Count; i++)
-            //{
-            //    AutomationElementCollection collection = collectionList[i];
-            //    for (int j = 0; j < elementCollection.Count; j++)
-            //    {
-            //        AutomationElement element = elementCollection[j];
-            //        if (element != null)
-            //        {
-            //            try
-            //            {
-            //                if (name == element.Current.Name && type == element.Current.LocalizedControlType)
-            //                {
-            //                    AutomationElement parent = walker.GetParent(element);
-            //                    //AutomationElement parent = element.CachedParent;
-            //                    if (parent != null)
-            //                    {
-            //                        if (pname == parent.Current.Name && ptype == parent.Current.LocalizedControlType)
-            //                        {
-            //                            return element;
-            //                        }
-            //                    }
-            //                }
-            //            }
-            //            catch (System.Exception ex)
-            //            {
-
-            //            }
-
-            //        }
-            //    }
-            //} 
-            #endregion
             return null;
         }
 
@@ -2178,6 +2321,12 @@ namespace AutoUIPlayback
 
         }
 
+        public AutomationElement GetParentElement(AutomationElement element)
+        {
+            TreeWalker walker = TreeWalker.ControlViewWalker;
+            return walker.GetParent(element);
+        }
+
         public void FindElementFromHandle()
         {
             EnumThreadWindowsCallback callback1 = new EnumThreadWindowsCallback(EnumWindowsCallback);
@@ -2212,9 +2361,9 @@ namespace AutoUIPlayback
             }
             
             AutomationElement element = AutomationElement.FromHandle(handle);
-            string name = element.Current.Name;
-            string type = element.Current.LocalizedControlType;
-            Console.WriteLine("name:" + name + " type:" + type);
+            //string name = element.Current.Name;
+            //string type = element.Current.LocalizedControlType;
+            //Console.WriteLine("name:" + name + " type:" + type);
             //AutomationElement tempElement = mainWindow;
             //mainWindow = element;
             Thread thread = new Thread(() =>
