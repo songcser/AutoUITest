@@ -1,6 +1,0 @@
-Start "D:\Program Files\Pro-EMFATIC\Pro-EMFATIC for Femap v3.2 32-bit\Pro-EMFATIC.exe"
-WindowCreate "Femap with NX Nastran - [Model1] - [Untitled]"
-WindowCreate "Pro-EMFATIC v3.2"
-Activate "Pro-EMFATIC v3.2""window"
-Activate "Femap with NX Nastran - [Model1] - [Untitled]""window"
-Stop

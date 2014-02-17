@@ -153,12 +153,7 @@ namespace AutoUIPlayback
         private string tpname;
         private string tptype;
         private AutomationElement targetElement;
-        //private bool anyFlag = false;
-        //public AutomationElement MainWindow
-        //{
-        //    get { return mainWindow; }
-        //    set { mainWindow = value; }
-        //}
+        
         public Analysis()
         {
             pid = new List<int>();
@@ -270,7 +265,7 @@ namespace AutoUIPlayback
             }
             else if ("Stop" == strList[0])
             {
-                //Stop();
+                Stop();
                 return false;
             }
             else if ("SetFocus "==strList[0])
@@ -314,6 +309,7 @@ namespace AutoUIPlayback
             }
             else if ("Activate " == strList[0])
             {
+                #region 
                 if (strList.Count == 9)
                 {
                     ActivateWindow(strList[1], strList[2], bool.Parse(strList[3]), strList[4], strList[5]);
@@ -322,7 +318,7 @@ namespace AutoUIPlayback
                 {
                     ActivateWindow(strList[1], strList[2]);
                 }
-                
+                #endregion
             }
             else if ("MouseDown " == strList[0])
             {
@@ -349,6 +345,7 @@ namespace AutoUIPlayback
             }
             else if ("Wait " == strList[0])
             {
+                #region MyRegion
                 if (strList.Count == 9)
                 {
                     WaitControl(strList[1], strList[2], bool.Parse(strList[3]), strList[4], strList[8]);
@@ -360,10 +357,12 @@ namespace AutoUIPlayback
                 else
                 {
                     return false;
-                }
+                } 
+                #endregion
             }
             else if ("Move " == strList[0])
             {
+                #region MyRegion
                 if (strList.Count == 10)
                 {
                     Move(strList[1], strList[2], bool.Parse(strList[3]), strList[4], Int32.Parse(strList[5]), Int32.Parse(strList[6]), Int32.Parse(strList[7]), Int32.Parse(strList[8]));
@@ -375,10 +374,12 @@ namespace AutoUIPlayback
                 else
                 {
                     return false;
-                }
+                } 
+                #endregion
             }
             else if ("SetValue " == strList[0])
             {
+                #region MyRegion
                 if (strList.Count == 8)
                 {
                     SetValue(strList[1], strList[2], bool.Parse(strList[3]), strList[4], strList[7]);
@@ -386,7 +387,25 @@ namespace AutoUIPlayback
                 else if (strList.Count == 9)
                 {
                     SetValue(strList[1], strList[2], bool.Parse(strList[3]), strList[4], strList[5], strList[8]);
+                } 
+                #endregion
+            }
+            else if ("Compare " == strList[0])
+            {
+                #region MyRegion
+                if (strList.Count == 5)
+                {
+                    CompareValue(strList[1], strList[2], strList[3]);
                 }
+                else if (strList.Count == 12)
+                {
+                    CompareValue(strList[1], strList[2], bool.Parse(strList[3]), strList[4], strList[7], strList[8], strList[9], strList[10]);
+                }
+                else if (strList.Count == 13)
+                {
+                    CompareValue(strList[1], strList[2], bool.Parse(strList[3]), strList[4], strList[5], strList[8], strList[9], strList[10], strList[11]);
+                } 
+                #endregion
             }
             return true;
         }
@@ -476,6 +495,7 @@ namespace AutoUIPlayback
                         elementCollection.Clear();
                         ElementList collection = new ElementList();
                         //Console.WriteLine("Thread: " + mainWindow.Current.Name);
+                        collection.Add(mainWindow);
                         CacheElement(mainWindow, new AndCondition(condition1, condition2), collection);
                         collectionList.Add(collection);
                         //Console.WriteLine("Count: " + collectionList.Count);
@@ -649,8 +669,7 @@ namespace AutoUIPlayback
 //                     SyncFlag = true;
 //                 });
 //                 thread.Start();
-//                 
-                
+//                          
             }
             else
             {
@@ -1361,6 +1380,106 @@ namespace AutoUIPlayback
             
         }
 
+        public void CompareValue(string autoId, string expectedValue, string tolerance)
+        {
+            AutomationElement element = FindElementByAutomationId(autoId);
+            ValuePattern valuePattern = GetValuePattern(element);
+            string value = valuePattern.Current.Value.Trim();
+            
+            Compare(value, expectedValue, tolerance);
+        }
+
+        public void CompareValue(string name, string type, bool flag, string autoId, string offsetX,string offsetY,string expectedValue, string tolerance)
+        {
+            AutomationElement element = FindElement(name, type, flag, autoId);
+            if (element == null)
+            {
+                element = FindElement(name, type, flag, autoId);
+                if (element == null)
+                {
+                    return;
+                }
+            }
+            System.Windows.Rect rect = element.Current.BoundingRectangle;
+            int x = (int)rect.X + int.Parse(offsetX);
+            int y = (int)rect.Y + int.Parse(offsetY);
+            System.Windows.Point wpt = new System.Windows.Point(x,y);
+            element = AutomationElement.FromPoint(wpt);
+            ValuePattern valuePattern = GetValuePattern(element);
+            string value = valuePattern.Current.Value.Trim();
+
+            Compare(value, expectedValue, tolerance);
+        }
+
+        public void CompareValue(string name, string type, bool flag, string pname,string ptype,string offsetX,string offsetY, string expectedValue, string tolerance)
+        {
+            AutomationElement element = FindElement(name, type, flag, pname, ptype);
+            if (element == null)
+            {
+                element = FindElement(name, type, flag, pname, ptype);
+                if (element == null)
+                {
+                    return;
+                }
+            }
+            System.Windows.Rect rect = element.Current.BoundingRectangle;
+            int x = (int)rect.X + int.Parse(offsetX);
+            int y = (int)rect.Y + int.Parse(offsetY);
+            System.Windows.Point wpt = new System.Windows.Point(x, y);
+            element = AutomationElement.FromPoint(wpt);
+            ValuePattern valuePattern = GetValuePattern(element);
+            string value = valuePattern.Current.Value.Trim();
+
+            Compare(value, expectedValue, tolerance);
+        }
+
+        public void Compare(string value, string expectedValue, string tolerance)
+        {
+            expectedValue = expectedValue.Trim();
+            if (tolerance == "")
+            {
+                if (value != expectedValue)
+                {
+                    Console.WriteLine("The value: " + value + " is not equals expected value");
+                    Stop();
+                    System.Environment.Exit(-1);
+                }
+            }
+            else
+            {
+                double ev;
+                if (double.TryParse(expectedValue, out ev))
+                {
+                    double v;
+                    if (!double.TryParse(value, out v))
+                    {
+                        Console.WriteLine("The value is wrong");
+                        Stop();
+                        System.Environment.Exit(-1);
+                    }
+                    double t;
+                    if (!double.TryParse(tolerance, out t))
+                    {
+                        Console.WriteLine("The Tolerance is wrong");
+                        Stop();
+                        System.Environment.Exit(-1);
+                    }
+                    if (v < (ev - t) || v > (ev + t))
+                    {
+                        Console.WriteLine("The value is not expected value");
+                        Stop();
+                        System.Environment.Exit(-1);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("The expected value is wrong");
+                    Stop();
+                    System.Environment.Exit(-1);
+                }
+            }
+        }
+
         public void AnalysisType(AutomationElement element,int offsetX,int offsetY)
         {
             ControlType type = element.Current.ControlType;
@@ -1649,6 +1768,64 @@ namespace AutoUIPlayback
 
             }
 
+        }
+
+        public AutomationElement FindElementByAutomationId(string autoId)
+        {
+            int count = 0;
+            while (SyncFlag > 0)
+            {
+                Thread.Sleep(100);
+                if (count > 1000)
+                {
+                    break;
+                }
+                count++;
+            }
+            for (int i = 0; i < elementCollection.Count; i++)
+            {
+                try
+                {
+                    AutomationElement targetElem = elementCollection.GetElement(i);
+
+                    if (targetElem != null && autoId == targetElem.Current.AutomationId )
+                    {
+                        return targetElem;
+                    }
+
+                }
+                catch (System.Exception ex)
+                {
+
+                }
+
+            }
+            UpdateCache();
+            for (int i = 0; i < elementCollection.Count; i++)
+            {
+                try
+                {
+                    AutomationElement targetElem = elementCollection.GetElement(i);
+
+                    if (targetElem != null && autoId == targetElem.Current.AutomationId)
+                    {
+                        return targetElem;
+                    }
+
+                }
+                catch (System.Exception ex)
+                {
+
+                }
+
+            }
+            tautoId = autoId;
+            FindElementFromHandleByAutomationId();
+            if (targetElement != null)
+            {
+                return targetElement;
+            }
+            return null;
         }
 
         public AutomationElement FindElement(string name, string type, bool flag, string autoId)
@@ -1986,7 +2163,38 @@ namespace AutoUIPlayback
             }
             return null;
         }
-        
+
+        private AutomationElement WalkEnabledElements(AutomationElement rootElement, string autoId)
+        {
+            Condition condition1 = new PropertyCondition(AutomationElement.IsControlElementProperty, true);
+            //Condition condition2 = new PropertyCondition(AutomationElement.IsEnabledProperty, flag);
+            //Condition condition3 = new NotCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Image));
+            //Condition condition4 = new NotCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text));
+            //Condition condition5 = new NotCondition(new PropertyCondition(AutomationElement.NameProperty, "chart1"));
+            TreeWalker walker = new TreeWalker(new AndCondition(condition1));
+            AutomationElement elementNode = walker.GetFirstChild(rootElement);
+            int count = 0;
+            while (elementNode != null)
+            {
+                if (elementNode.Current.AutomationId == autoId)
+                {
+                    return elementNode;
+                }
+                if (elementNode.Current.LocalizedControlType != "image")
+                {
+                    AutomationElement elem = WalkEnabledElements(elementNode, autoId);
+                    if (elem != null)
+                    {
+                        return elem;
+                    }
+                }
+                //
+                elementNode = walker.GetNextSibling(elementNode);
+                count++;
+            }
+            return null;
+        }
+
         public AutomationElement FindElement(string name, string type,bool flag, string pname, string ptype)
         {
             int count = 0;
@@ -2340,6 +2548,12 @@ namespace AutoUIPlayback
             
         }
 
+        private void FindElementFromHandleByAutomationId()
+        {
+            EnumThreadWindowsCallback callback1 = new EnumThreadWindowsCallback(EnumWindowsCallbackExp);
+            EnumWindows(callback1, IntPtr.Zero);
+        }
+
         private bool EnumWindowsCallback(IntPtr handle, IntPtr extraParameter)
         {
             bool flag = false;
@@ -2432,6 +2646,49 @@ namespace AutoUIPlayback
             thread.Start();
             thread.Join();
 
+            if (targetElement != null)
+            {
+                return false;
+            }
+            //mainWindow = tempElement;
+            return true;
+        }
+
+        private bool EnumWindowsCallbackExp(IntPtr handle, IntPtr extarParameter)
+        {
+            bool flag = false;
+            int processid = 0;
+            GetWindowThreadProcessId(handle, ref processid);
+            if (processid != process.Id)
+            {
+                for (int i = 0; i < pid.Count; i++)
+                {
+                    if (processid == pid[i])
+                    {
+                        flag = true;
+                    }
+                }
+                if (!flag)
+                {
+                    return true;
+                }
+            }
+            AutomationElement element = AutomationElement.FromHandle(handle);
+            Thread thread = new Thread(() =>
+            {
+                try
+                {
+                    targetElement = FindChildElementByAutomationId(element, tautoId);
+                }
+                catch (System.Exception ex)
+                {
+
+                }
+
+
+            });
+            thread.Start();
+            thread.Join();
             if (targetElement != null)
             {
                 return false;
@@ -2547,6 +2804,34 @@ namespace AutoUIPlayback
         
         }
 
+        private AutomationElement FindChildElementByAutomationId(AutomationElement rootElement, string autoId)
+        {
+            Condition condition1 = new PropertyCondition(AutomationElement.IsControlElementProperty, true);
+            //Condition condition2 = new PropertyCondition(AutomationElement.IsEnabledProperty, flag);
+            //Condition condition3 = new NotCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Image));
+            //Condition condition4 = new NotCondition(new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text));
+            //Condition condition5 = new NotCondition(new PropertyCondition(AutomationElement.NameProperty, "chart1"));
+            TreeWalker walker = new TreeWalker(condition1);
+            AutomationElement elementNode = walker.GetFirstChild(rootElement);
+            int count = 0;
+            while (elementNode != null)
+            {
+                if (elementNode.Current.AutomationId == autoId)
+                {
+                    return elementNode;
+                }
+                AutomationElement element = WalkEnabledElements(elementNode,autoId);
+                if (element != null)
+                {
+                    return element;
+                }
+                //
+                elementNode = walker.GetNextSibling(elementNode);
+                count++;
+            }
+            return null;
+        }
+
         public string[] GetString(string str)
         {
             //string delimstr = " []";
@@ -2624,9 +2909,17 @@ namespace AutoUIPlayback
             for (int i = 0; i < pid.Count;i++ )
             {
                 Process p = Process.GetProcessById((int)pid[i]);
-                p.Kill();
+                if (!p.HasExited)
+                {
+                    p.Kill();
+                }
+                
             }
-            process.Kill();
+            if (!process.HasExited)
+            {
+                process.Kill();
+            }
+            
         }
 
         #region MyRegion SendCtrlKey

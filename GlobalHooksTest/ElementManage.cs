@@ -26,7 +26,7 @@ namespace GlobalHooksTest
             get { return isFocusable; }
             set { isFocusable = value; }
         }
-        private static StringBuilder log;
+        public static string log;
         private static System.Windows.Rect rect;
 
         private const int LB_GETTEXT = 0x0189; 
@@ -102,7 +102,7 @@ namespace GlobalHooksTest
             handleList = new List<IntPtr>();
             //childElemList = new List<AutomationElement>();
             proceses = new List<Process>();
-            log = new StringBuilder();
+            //log = new String();
             rect = new System.Windows.Rect();
 
             timer = new System.Timers.Timer();
@@ -450,7 +450,6 @@ namespace GlobalHooksTest
         {
             if (element == null)
             {
-                //AddText("Automation null");
                 return false;
             }
             
@@ -1500,7 +1499,7 @@ namespace GlobalHooksTest
             {
                 str += "\n";
             }
-            log.Append(str); 
+            log+=str; 
         }
 
         //public void SubscribeToInvoke(AutomationElement elementButton)
@@ -1609,23 +1608,24 @@ namespace GlobalHooksTest
             {
                 try
                 {
-                    
-//                     AutomationElement delem = AutomationElement.FromPoint(wpt);
-// 
-//                     if (IsOwnProcess(delem))
-//                     {
-//                         //drawElement = delem;
-//                         System.Windows.Rect rect = delem.Current.BoundingRectangle;
-//                         Rectangle r = new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
-//                         ControlPaint.DrawReversibleFrame(r, Color.Red, FrameStyle.Thick);
-//                         //System.IntPtr DesktopHandle = GetDC(System.IntPtr.Zero); 
-//                         //Graphics g = Graphics.FromHdc(DesktopHandle);
-//                         //g.DrawRectangle(new Pen(Color.Red), r);
-//                             
-//                        //g.Dispose();
-//                        
-//                         
-//                     }
+                    #region MyRegion
+                    //                     AutomationElement delem = AutomationElement.FromPoint(wpt);
+                    // 
+                    //                     if (IsOwnProcess(delem))
+                    //                     {
+                    //                         //drawElement = delem;
+                    //                         System.Windows.Rect rect = delem.Current.BoundingRectangle;
+                    //                         Rectangle r = new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
+                    //                         ControlPaint.DrawReversibleFrame(r, Color.Red, FrameStyle.Thick);
+                    //                         //System.IntPtr DesktopHandle = GetDC(System.IntPtr.Zero); 
+                    //                         //Graphics g = Graphics.FromHdc(DesktopHandle);
+                    //                         //g.DrawRectangle(new Pen(Color.Red), r);
+                    //                             
+                    //                        //g.Dispose();
+                    //                        
+                    //                         
+                    //                     } 
+                    #endregion
                 }
                 catch (System.Exception ex)
                 {
@@ -1638,7 +1638,7 @@ namespace GlobalHooksTest
 
         public void SetWaitListener()
         {
-            string message = "Wait ";
+            string message = "";
             Point point = Control.MousePosition;
             System.Windows.Point wpt = new System.Windows.Point(point.X, point.Y);
             Thread thread = new Thread(() =>
@@ -1650,6 +1650,7 @@ namespace GlobalHooksTest
 
                     if (IsOwnProcess(element))
                     {
+                        message = "Wait ";
                         ControlType type = GetElementType(element);
                         if (type==ControlType.Edit)
                         {
@@ -1659,27 +1660,31 @@ namespace GlobalHooksTest
                         }
                         else
                         {
-                            //bool enable = element.Current.IsEnabled;
-                            //if (enable)
-                            //{
-                            //    message += GetCurrentElementInfo(element) + "true\"";
-                            //}
-                            //else
-                            //{
-                            //    message += GetCurrentElementInfo(element) + "false\"";
-                            //}
                             message += GetCurrentElementInfo(element)+"\"";
                         }
-                        
-
+                    }
+                    else
+                    {
+                        message = "Activate ";
+                        int processId;
+                        object processIdentifierNoDefault = element.GetCurrentPropertyValue(AutomationElement.ProcessIdProperty, true);
+                        if (processIdentifierNoDefault == AutomationElement.NotSupported)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            processId = (int)processIdentifierNoDefault;
+                            Process process = Process.GetProcessById((int)processId);
+                            proceses.Add(process);
+                        }
+                        message += GetCurrentElementInfo(element);
                     }
                 }
                 catch (System.Exception ex)
                 {
 
                 }
-
-
             });
             thread.Start();
             thread.Join();
@@ -1715,7 +1720,7 @@ namespace GlobalHooksTest
                 SendMessageBack(message);
         }
 
-        public static ValuePattern GetValuePattern(AutomationElement element)
+        public ValuePattern GetValuePattern(AutomationElement element)
         {
             object currentPattern;
             if (!element.TryGetCurrentPattern(ValuePattern.Pattern, out currentPattern))
@@ -2130,6 +2135,5 @@ namespace GlobalHooksTest
             }
         }
 
-        
     }
 }

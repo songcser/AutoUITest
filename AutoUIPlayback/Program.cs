@@ -29,11 +29,11 @@ namespace AutoUIPlayback
                     {
                         break;
                     }
-                    
                 }
             }
+            //Console.Read();
             return;
-           // Console.Read();
+            
         }
     }
 }

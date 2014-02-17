@@ -271,10 +271,9 @@ static LRESULT CALLBACK KeyboardLLHookCallback(int code, WPARAM wparam, LPARAM l
 		{
 			return false;
 		}
-*/
-		
+		*/
 		int vkCode = pKeyboardStruct->vkCode;
-		if (vkCode == VK_F1||vkCode == VK_F2)
+		if (vkCode == VK_F2||vkCode == VK_F3||vkCode == VK_F6)
 		{
 			return 1;
 		}

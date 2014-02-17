@@ -41,7 +41,11 @@ namespace GlobalHooksTest
 		
 
         private ElementManage elemManage;
-		private GlobalHooks _GlobalHooks;
+        //private CompareForm compareForm;
+		private  static GlobalHooks _GlobalHooks;
+        //private static bool _GlobalFlag;
+        private delegate void DialogCloseListener();
+        private event DialogCloseListener DialogCloseEvent;
         private static string strPath;
         private Label label1;
         private Label label2;
@@ -56,6 +60,7 @@ namespace GlobalHooksTest
         private Label label3;
         private Button button2;
 
+        CompareForm dialogFrom;
         //private AutomationEventHandler UIAEventHandler;
         //private AutomationFocusChangedEventHandler focusHandler = null;
         //private bool comboBoxFlag = true;
@@ -91,12 +96,16 @@ namespace GlobalHooksTest
             _GlobalHooks.GetMsg.GetMsg += new GlobalHooksTest.GlobalHooks.WndProcEventHandler(_GlobalHooks_GetMsg);
 
             elemManage = new ElementManage();
+            //compareForm = new CompareForm();
             elemManage.SendMessageBack += new ElementManage.CallBackMessage(_GetMessage);
-
+            //compareForm.SendMessageBack += new CompareForm.CallBackMessage(_GetMessageFrom);
             //filePath = elemManage.GetUserPath();
             this.textBox2.Text = elemManage.GetUserPath();
-            //AutomationEventHandler eventHandler = new AutomationEventHandler(elemManage.OnWindowOpenOrClose);
 
+            //
+            DialogCloseEvent += new DialogCloseListener(StartHook);
+            //AutomationEventHandler eventHandler = new AutomationEventHandler(elemManage.OnWindowOpenOrClose);
+            //_GlobalFlag = false;
             //Automation.AddAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, TreeScope.Children, eventHandler);
 		}
 
@@ -114,18 +123,8 @@ namespace GlobalHooksTest
                 //_GlobalHooks.SysMsgFilter.Stop();
                 //_GlobalHooks.CallWndProc.Stop();
                 //_GlobalHooks.GetMsg.Stop();
-                //if (stopFlag)
-                //{
-                //    StringBuilder builder = elemManage.AnalysisStr();
-
-                //    using (StreamWriter sw = File.CreateText(textBox2.Text))
-                //    {
-
-                //        sw.Write(builder.ToString());
-
-                //    }
-                //}
-
+                
+                elemManage.WriteToFile(textBox2.Text);
                 if (components != null)
                 {
                     components.Dispose();
@@ -162,33 +161,33 @@ namespace GlobalHooksTest
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.textBoxMessages);
-            this.groupBox1.Location = new System.Drawing.Point(4, 114);
+            this.groupBox1.Location = new System.Drawing.Point(8, 114);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(583, 257);
+            this.groupBox1.Size = new System.Drawing.Size(573, 266);
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output";
             // 
             // textBoxMessages
             // 
-            this.textBoxMessages.BackColor = System.Drawing.Color.White;
-            this.textBoxMessages.Cursor = System.Windows.Forms.Cursors.No;
+            this.textBoxMessages.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.textBoxMessages.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.textBoxMessages.ForeColor = System.Drawing.SystemColors.WindowText;
             this.textBoxMessages.HideSelection = false;
-            this.textBoxMessages.Location = new System.Drawing.Point(11, 19);
+            this.textBoxMessages.Location = new System.Drawing.Point(8, 19);
             this.textBoxMessages.Multiline = true;
             this.textBoxMessages.Name = "textBoxMessages";
-            this.textBoxMessages.ReadOnly = true;
             this.textBoxMessages.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBoxMessages.Size = new System.Drawing.Size(557, 238);
-            this.textBoxMessages.TabIndex = 7;
+            this.textBoxMessages.Size = new System.Drawing.Size(556, 238);
+            this.textBoxMessages.TabIndex = 100;
+            this.textBoxMessages.TabStop = false;
             // 
             // BtnUninitCbt
             // 
             this.BtnUninitCbt.Enabled = false;
-            this.BtnUninitCbt.Location = new System.Drawing.Point(155, 76);
+            this.BtnUninitCbt.Location = new System.Drawing.Point(154, 76);
             this.BtnUninitCbt.Name = "BtnUninitCbt";
-            this.BtnUninitCbt.Size = new System.Drawing.Size(128, 32);
+            this.BtnUninitCbt.Size = new System.Drawing.Size(113, 32);
             this.BtnUninitCbt.TabIndex = 2;
             this.BtnUninitCbt.Text = "Stop Record";
             this.BtnUninitCbt.Click += new System.EventHandler(this.BtnUninitCbt_Click);
@@ -197,7 +196,7 @@ namespace GlobalHooksTest
             // 
             this.BtnInitCbt.Location = new System.Drawing.Point(15, 76);
             this.BtnInitCbt.Name = "BtnInitCbt";
-            this.BtnInitCbt.Size = new System.Drawing.Size(134, 32);
+            this.BtnInitCbt.Size = new System.Drawing.Size(113, 32);
             this.BtnInitCbt.TabIndex = 1;
             this.BtnInitCbt.Text = "Start Record";
             this.BtnInitCbt.Click += new System.EventHandler(this.BtnInitCbt_Click);
@@ -207,7 +206,7 @@ namespace GlobalHooksTest
             this.textBox1.Location = new System.Drawing.Point(119, 13);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(364, 20);
-            this.textBox1.TabIndex = 5;
+            this.textBox1.TabIndex = 9;
             // 
             // button1
             // 
@@ -243,7 +242,7 @@ namespace GlobalHooksTest
             this.textBox2.Location = new System.Drawing.Point(119, 47);
             this.textBox2.Name = "textBox2";
             this.textBox2.Size = new System.Drawing.Size(364, 20);
-            this.textBox2.TabIndex = 9;
+            this.textBox2.TabIndex = 5;
             // 
             // button2
             // 
@@ -258,9 +257,9 @@ namespace GlobalHooksTest
             // groupBox2
             // 
             this.groupBox2.Controls.Add(this.label3);
-            this.groupBox2.Location = new System.Drawing.Point(328, 76);
+            this.groupBox2.Location = new System.Drawing.Point(339, 76);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(244, 32);
+            this.groupBox2.Size = new System.Drawing.Size(233, 32);
             this.groupBox2.TabIndex = 11;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "注意";
@@ -269,17 +268,17 @@ namespace GlobalHooksTest
             // 
             this.label3.AutoSize = true;
             this.label3.ForeColor = System.Drawing.Color.Red;
-            this.label3.Location = new System.Drawing.Point(46, 13);
+            this.label3.Location = new System.Drawing.Point(41, 13);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(166, 13);
+            this.label3.Size = new System.Drawing.Size(181, 13);
             this.label3.TabIndex = 0;
-            this.label3.Text = "F1,F2键被屏蔽，用于测试软件";
+            this.label3.Text = "F2,F3,F6键被屏蔽，用于测试软件";
             this.label3.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // Form1
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-            this.ClientSize = new System.Drawing.Size(605, 390);
+            this.ClientSize = new System.Drawing.Size(589, 390);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.textBox2);
@@ -306,9 +305,10 @@ namespace GlobalHooksTest
 		static void Main() 
 		{
 			Application.Run(new Form1());
+            
 		}
-
-        private void StartHook()
+        
+        private void Start()
         {
             _GlobalHooks.Shell.Start();
             _GlobalHooks.CBT.Start();
@@ -320,6 +320,12 @@ namespace GlobalHooksTest
             hookFlag = true;
             BtnInitCbt.Enabled = false;
             BtnUninitCbt.Enabled = true;
+        }
+
+        private void StartHook()
+        {
+            elemManage.SetHookFlag(true);
+            hookFlag = true;
         }
 
         private void StartHookEx()
@@ -335,8 +341,8 @@ namespace GlobalHooksTest
             BtnInitCbt.Enabled = false;
             BtnUninitCbt.Enabled = true;
         }
-        
-        private void StopHook()
+
+        private void Stop()
         {
             _GlobalHooks.Shell.Stop();
 
@@ -349,6 +355,12 @@ namespace GlobalHooksTest
             hookFlag = false;
             BtnInitCbt.Enabled = true;
             BtnUninitCbt.Enabled = false;
+        }
+
+        private void StopHook()
+        {
+            elemManage.SetHookFlag(false);
+            hookFlag = false;
         }
 
         private void StopHookEx()
@@ -368,7 +380,6 @@ namespace GlobalHooksTest
 
 		private void BtnInitCbt_Click(object sender, System.EventArgs e)
 		{
-            //string time = elemManage.GetTime();
             
             try
             {
@@ -380,18 +391,17 @@ namespace GlobalHooksTest
                 return;
             }
             
-            StartHook();
+            Start();
             
-
 		}
 
 		private void BtnUninitCbt_Click(object sender, System.EventArgs e)
 		{
             AddText("Stop");
-            StopHook();
+            Stop();
             //stopFlag = false;
             //StringBuilder builder = elemManage.AnalysisStr();
-            elemManage.WriteToFile(textBox2.Text);
+            
             
 		}
 
@@ -419,7 +429,7 @@ namespace GlobalHooksTest
 			//this.ListCbt.Items.Add("Activate: " + GetWindowName(Handle));
             //string time = elemManage.GetTime();
             //string name = elemManage.GetElementInfo(elemManage.GetElementFromHandle(Handle));
-            if (elemManage.hasWindowsProcess(Handle))
+            if (elemManage.hasWindowsProcess(Handle)&&hookFlag)
             {
 //                 string name = elemManage.AddMainElementFromHandle(Handle);
 //                 if (name == null || name == "\"" || name == " " || name == "")
@@ -511,7 +521,7 @@ namespace GlobalHooksTest
 		{
 			//this.ListShell.Items.Add("Created: " + elemManage.GetWindowName(Handle));
             //string time = elemManage.GetTime();
-            if (elemManage.hasWindowsProcess(Handle))
+            if (elemManage.hasWindowsProcess(Handle) && hookFlag)
             {
                 string name = elemManage.AddMainElementFromHandle(Handle);
                 if (name == null || name == "\"" || name == " " || name == "")
@@ -549,7 +559,7 @@ namespace GlobalHooksTest
 
 		private void MouseLL_MouseMove(object sender, MouseEventArgs e)
 		{
-            if (mouseDownFlag)
+            if (mouseDownFlag && hookFlag)
             {
                 mouseDownFlag = false;
                 //string action = "MouseMove";
@@ -589,54 +599,41 @@ namespace GlobalHooksTest
 
         private void MouseLL_MouseDown(object sender, MouseEventArgs e)
         {
-            mouseDownFlag = true;
-            //string action = e.Button.ToString() + "MouseDown";
-            //elemManage.GetMouseAction(action, e);
-            if ("Left"==e.Button.ToString())
+            if (hookFlag)
             {
-                elemManage.LeftMouseDownAction(e.X, e.Y);
+                mouseDownFlag = true;
+                //string action = e.Button.ToString() + "MouseDown";
+                //elemManage.GetMouseAction(action, e);
+                if ("Left" == e.Button.ToString())
+                {
+                    elemManage.LeftMouseDownAction(e.X, e.Y);
+                }
+                else if ("Right" == e.Button.ToString())
+                {
+                    elemManage.RightMouseDownAction(e.X, e.Y);
+                }
             }
-            else if ("Right" == e.Button.ToString())
-            {
-                elemManage.RightMouseDownAction(e.X, e.Y);
-            }
-//             string message = elemManage.GetElementFromPoint(new Point(e.X, e.Y));
-//             if (message == null||message == "")
-//             {
-//                 return;
-//             }
-//             string hwnd = elemManage.GetNameFromHandle((IntPtr)e.Clicks);
-//             // string msg = string.Format("Mouse event: {0}-->{1}: ({2},{3}).,{4}", mEvent.ToString(), name, point.X, point.Y, hwnd)
-//             //this.ListCbt.Items.Add("MouseDown:"+ message + e.X + "," + e.Y);
-//             string msg = string.Format("{0}MouseDown|{1}|{2}", e.Button.ToString(), message, e.Delta);
-//             AddText(msg);
+            
         }
 
         private void MouseLL_MouseUp(object sender, MouseEventArgs e)
         {
-            mouseDownFlag = false;
-            //moveFristFlag = true;
-            //string action = e.Button.ToString() + "MouseUp";
-            //elemManage.GetMouseAction(action, e);
-            if ("Left" == e.Button.ToString())
+            if (hookFlag)
             {
-                elemManage.LeftMouseUpAction(e.X, e.Y);
+                mouseDownFlag = false;
+                //moveFristFlag = true;
+                //string action = e.Button.ToString() + "MouseUp";
+                //elemManage.GetMouseAction(action, e);
+                if ("Left" == e.Button.ToString())
+                {
+                    elemManage.LeftMouseUpAction(e.X, e.Y);
+                }
+                else if ("Right" == e.Button.ToString())
+                {
+                    elemManage.RightMouseUpAction(e.X, e.Y);
+                }
             }
-            else if ("Right" == e.Button.ToString())
-            {
-                elemManage.RightMouseUpAction(e.X, e.Y);
-            }
-//             string message = elemManage.GetElementFromPoint(new Point(e.X, e.Y));
-//             if (message == null||message=="")
-//             {
-//                 return;
-//             }
-//             string hwnd = elemManage.GetNameFromHandle((IntPtr)e.Clicks);
-//             // string msg = string.Format("Mouse event: {0}-->{1}: ({2},{3}).,{4}", mEvent.ToString(), name, point.X, point.Y, hwnd)
-//             //this.ListCbt.Items.Add("MouseDown:"+ message + e.X + "," + e.Y);
-//             string msg = string.Format("{0}MouseUp|{1}|{2}", e.Button.ToString(), message,e.Delta);
-//             AddText(msg);
-         
+
         }
 
         private void MouseLL_MouseDClick(object sender, MouseEventArgs e)
@@ -647,63 +644,62 @@ namespace GlobalHooksTest
         private void KeyboardLL_KeyDown(object sender, KeyEventArgs e)
         {
             //string time = elemManage.GetTime();
-            if (elemManage.isTopWindow())
-            {
-                Keys key = e.KeyData;
+            
+            Keys key = e.KeyData;
 
-                if (key == Keys.F1)
+            if (key == Keys.F3&&hookFlag)
+            {
+                drawFlag = true;
+            }
+            else if (elemManage.isTopWindow()&&key == Keys.F2)
+            {
+                if (hookFlag)
                 {
-                    drawFlag = true;
-                }
-                else if (key == Keys.F2)
-                {
-                    if (hookFlag)
-                    {
-                        StopHookEx();
-                    }
-                    else
-                    {
-                        StartHookEx();
-                    }
+                    StopHookEx();
                 }
                 else
                 {
-                    if (hookFlag)
-                    {
-                        elemManage.KeyDownAction(e.KeyData);
-                    }
+                    StartHookEx();
                 }
-
-
             }
-            
+            else if (elemManage.isTopWindow()&&key == Keys.F6 && hookFlag)
+            {
+                    
+                ThreadStart threadDelegate = new ThreadStart(OpenCompareDialog);
+                workerThread = new Thread(threadDelegate);
+                workerThread.Start();
+                //workerThread.Join();
+                    
+            }
+            else 
+            {
+                if (elemManage.isTopWindow()&&hookFlag)
+                {
+                    elemManage.KeyDownAction(e.KeyData);
+                }
+            }
         }
 
         private void KeyboardLL_KeyUp(object sender, KeyEventArgs e)
         {
-            //string time = elemManage.GetTime();
-            if (elemManage.isTopWindow())
+            Keys key = e.KeyData;
+            if (key == Keys.F3 && hookFlag)
             {
-                Keys key = e.KeyData;
-                if (key == Keys.F1)
+                drawFlag = false;
+                elemManage.SetWaitListener();
+            }
+            else if (key == Keys.F2||key == Keys.F6)
+            {
+                //drawFlag = false;
+                //elemManage.SetValueListener();
+            }
+            else
+            {
+                if (hookFlag&&elemManage.isTopWindow())
                 {
-                    drawFlag = false;
-                    elemManage.SetWaitListener();
+                    elemManage.KeyUpAction(e.KeyData);
                 }
-                else if (key == Keys.F2)
-                {
-                    //drawFlag = false;
-                    //elemManage.SetValueListener();
-                }
-                else
-                {
-                    if (hookFlag)
-                    {
-                        elemManage.KeyUpAction(e.KeyData);
-                    }
                     
-                }
-
             }
         }
 
@@ -985,6 +981,24 @@ namespace GlobalHooksTest
             elemManage.RegisterForEvents();
         }
 
+        private void OpenCompareDialog()
+        {
+            StopHook();
+            CompareForm form = new CompareForm();
+            //form.ShowDialog();
+            //dialogFrom = new CompareForm();
+            //dialogFrom.Owner = this;
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                string info = form.GetCompareInfo();
+                AddText(info);
+            }
+            //form.Close();
+            form.Dispose();
+            form = null;
+            StartHook();
+        }
+
         private void button2_Click(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
@@ -1009,6 +1023,11 @@ namespace GlobalHooksTest
             AddText(message);
         }
 
+        public void _GetMessageFrom(string message)
+        {
+            AddText(message);
+        }
+
         private void SetWaitListener()
         {
             elemManage.SetWaitListener();
@@ -1018,6 +1037,5 @@ namespace GlobalHooksTest
         {
             elemManage.SetValueListener();
         }
-	
     }
 }
