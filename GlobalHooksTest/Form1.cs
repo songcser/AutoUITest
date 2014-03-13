@@ -44,8 +44,8 @@ namespace GlobalHooksTest
         //private CompareForm compareForm;
 		private  static GlobalHooks _GlobalHooks;
         //private static bool _GlobalFlag;
-        private delegate void DialogCloseListener();
-        private event DialogCloseListener DialogCloseEvent;
+        //private delegate void DialogCloseListener();
+        //private event DialogCloseListener DialogCloseEvent;
         private static string strPath;
         private Label label1;
         private Label label2;
@@ -60,7 +60,7 @@ namespace GlobalHooksTest
         private Label label3;
         private Button button2;
 
-        CompareForm dialogFrom;
+        //CompareForm dialogFrom;
         //private AutomationEventHandler UIAEventHandler;
         //private AutomationFocusChangedEventHandler focusHandler = null;
         //private bool comboBoxFlag = true;
@@ -103,7 +103,7 @@ namespace GlobalHooksTest
             this.textBox2.Text = elemManage.GetUserPath();
 
             //
-            DialogCloseEvent += new DialogCloseListener(StartHook);
+            //DialogCloseEvent += new DialogCloseListener(StartHook);
             //AutomationEventHandler eventHandler = new AutomationEventHandler(elemManage.OnWindowOpenOrClose);
             //_GlobalFlag = false;
             //Automation.AddAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, TreeScope.Children, eventHandler);

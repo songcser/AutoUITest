@@ -103,6 +103,7 @@ namespace GlobalHooksTest
             //childElemList = new List<AutomationElement>();
             proceses = new List<Process>();
             //log = new String();
+            //log = "";
             rect = new System.Windows.Rect();
 
             timer = new System.Timers.Timer();
@@ -2131,7 +2132,10 @@ namespace GlobalHooksTest
         {
             using (StreamWriter sw = File.CreateText(path))
             {
-                sw.Write(log.ToString());
+                if (log!=null)
+                {
+                    sw.Write(log.ToString());
+                }
             }
         }
 
